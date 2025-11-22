@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    /* Output structure */
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    /* Module system — use CommonJS for now (stable with Node & Express) */
+    "module": "commonjs",
+    "target": "es2020",
+
+    /* Enable modern JS library support */
+    "lib": ["es2020"],
+    "types": ["node"],
+
+    /* Improve debugging and build quality */
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+
+    /* Optional but highly recommended */
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "allowJs": false,
+
+    /* Required for frameworks */
+    "experimentalDecorators": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
