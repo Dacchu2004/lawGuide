@@ -34,11 +34,11 @@ export const signup =async(req:Request,res:Response)=>{
         // Clean user response (hide password)
         const { password: _, ...userData } = user;
 
-        res.status(201).json({meassage:"Signup successful",user:userData});
+        return res.status(201).json({message:"Signup successful",user:userData});
     }
     catch(error){
         console.error("Signup Error:", error);
-        res.status(500).json({message:"Signup failed",error});
+        return res.status(500).json({message:"Signup failed",error});
     }
 };
 
@@ -73,7 +73,7 @@ export const login= async(req:Request,res:Response)=>{
             }
         );
 
-        res.json({
+        return res.json({
             message:"Login successful",
             token,
             user:{
@@ -86,6 +86,6 @@ export const login= async(req:Request,res:Response)=>{
     }
     catch(error){
         console.error("Login Error:",error);
-        res.status(500).json({message:"Login failed",error});
+        return res.status(500).json({message:"Login failed",error});
     }
 };

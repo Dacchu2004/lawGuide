@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import prisma from './config/db'; // Prisma import
+import authRoutes from './routes/auth';
 
 dotenv.config();
 
@@ -27,5 +28,8 @@ app.get('/test-db', async (req, res) => {
     res.status(500).json({ message: 'DB connection error ❌' });
   }
 });
+
+//Auth routes
+app.use('/api/auth',authRoutes);
 
 export default app;
