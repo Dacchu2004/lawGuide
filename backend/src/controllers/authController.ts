@@ -1,4 +1,4 @@
-import {Request,response,Response} from 'express';
+import {Request,Response} from 'express';
 import prisma from '../config/db';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
