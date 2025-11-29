@@ -17,5 +17,5 @@ class QueryResponse(BaseModel):
     
     retrieved_sections: List[RetrievedSection] = Field(default_factory=list)
     
-    error_type: Optional[str] = None  # Like "unretrievable" "low_confidence", "invalid_query"
+    error_type: Optional[str] = None  # Like "unretrievable" "low_confidence" "invalid_query"
     high_risk: bool = False  # Used to trigger caution notifications
