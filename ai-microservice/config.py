@@ -6,10 +6,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 🔐 API_KEYS
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_MODEL_NAME = "llama-3.1-8b-instant"
 
 if not GROQ_API_KEY:
-    print("❌ GROQ_API_KEY missing in .env — cannot start microservice.")
+    raise ValueError("❌ GROQ_API_KEY missing in .env — cannot start microservice.")
 
 # 🧠 Model Names
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"

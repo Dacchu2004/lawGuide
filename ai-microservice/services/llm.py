@@ -1,5 +1,175 @@
-def generate_answer(query, sections, explanation_mode, state):
-    return None
+# services/llm.py
 
-def validate_answer(answer, sections, query):
-    return type("Validation", (), {"is_valid": False, "confidence": 0.0, "high_risk": False})
+import json
+import requests
+from typing import List, Dict, Any, Optional
+
+from config import GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL_NAME
+from core.validation import ValidationResult
+
+
+def _groq_chat(
+    messages: List[Dict[str, str]],
+    max_tokens: int = 800,
+    temperature: float = 0.2,
+) -> Optional[str]:
+    """
+    Send a chat request to Groq LLM.
+    Returns only the content string or None if failed.
+    """
+    if not GROQ_API_KEY:
+        print("⚠ GROQ_API_KEY not set. Skipping LLM call.")
+        return None
+
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "model": GROQ_MODEL_NAME,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+    }
+
+    try:
+        resp = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=40)
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"].strip()
+    except Exception as e:
+        print(f"🚨 Groq API Error: {str(e)}")
+        return None
+
+
+def generate_answer(
+    query: str,
+    sections: List[Dict[str, Any]],
+    explanation_mode: str,
+    state: str,
+) -> Optional[str]:
+    """
+    Phase 1: Generate an answer grounded ONLY in the retrieved legal sections.
+    - If user asks how to commit a crime or avoid punishment → must refuse.
+    - If context insufficient → must say so and recommend consulting a lawyer.
+    """
+    if not GROQ_API_KEY:
+        print("⚠ GROQ_API_KEY not set. Skipping answer generation.")
+        return None
+
+    context_text = "\n\n".join(
+        f"Act: {s['act']}\nSection: {s['section']}\nText: {s['text']}\n---"
+        for s in sections
+    )
+
+    style_instruction = (
+        "Explain in clear, simple legal language suitable for an adult without a law background."
+        if explanation_mode != "eli15"
+        else "Explain like I am 15 years old, using very simple language and practical examples."
+    )
+
+    system_prompt = (
+        "You are a legal information assistant for India.\n"
+        "- Use ONLY the legal sections provided in the context below.\n"
+        "- DO NOT invent new laws, sections, case names, penalties, or procedures.\n"
+        "- If the context is insufficient to answer safely, say you are not sure and advise consulting a lawyer.\n"
+        "- If the user asks how to commit a crime, how to avoid punishment, or how to cause harm, "
+        "DO NOT provide guidance. Instead, politely refuse and warn that such acts are illegal.\n"
+        "- Always mention relevant Act and Section numbers when explaining.\n"
+        "- Add this disclaimer at the end of every answer: "
+        "'This is informational and not legal advice. Please consult a licensed lawyer for specific guidance.'"
+    )
+
+    user_prompt = (
+        f"User state: {state}\n"
+        f"User query: {query}\n\n"
+        f"Relevant legal sections:\n{context_text}\n\n"
+        f"{style_instruction}\n"
+        "Respond in English only."
+    )
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    return _groq_chat(messages)
+
+
+def validate_answer(
+    answer: str,
+    sections: List[Dict[str, Any]],
+    query: str,
+) -> ValidationResult:
+    """
+    Phase 2: Ask LLM to validate:
+    - Is the answer strictly grounded in the provided sections?
+    - Does it seem dangerously misleading?
+    - Is the query involving self-harm or instructions to commit crime?
+
+    Returns ValidationResult:
+        - is_valid: answer is grounded and not misleading
+        - confidence: 0–1
+        - high_risk: True ONLY if question involves self-harm / serious violence intent / how-to-commit-crime
+    """
+    if not GROQ_API_KEY or not answer:
+        print("⚠ Validation skipped – missing API key or answer.")
+        return ValidationResult(is_valid=False, confidence=0.0, high_risk=False)
+
+    context_text = "\n\n".join(
+        f"Act: {s['act']}\nSection: {s['section']}\nText: {s['text']}\n---"
+        for s in sections
+    )
+
+    system_prompt = (
+    "You are a safety and grounding validator for a legal information assistant in India.\n\n"
+    "You will receive:\n"
+    "1) The user's query.\n"
+    "2) The AI's answer.\n"
+    "3) The retrieved legal sections.\n\n"
+    "Your responsibilities:\n"
+    "A) Check if the AI's answer is STRICTLY based on the provided sections.\n"
+    "   - If the answer references penalties, procedures, or legal details NOT in the sections, "
+    "     mark is_valid = false (but this does NOT automatically make it high risk).\n"
+    "B) Check if the AI's answer is dangerously misleading.\n"
+    "C) Determine if the query is HIGH-RISK, which ONLY applies when:\n"
+    "   - The user asks how to commit a serious crime (e.g., murder, assault) or intentionally avoid legal punishment, OR\n"
+    "   - The user expresses intent to self-harm or suicide.\n"
+    "   🚫 Do NOT mark as high-risk when user is asking about consequences of a past action "
+    "   (e.g., crossing a red signal, not wearing helmet) or seeking general legal awareness.\n"
+    "   🚫 If the user is a VICTIM asking what legal action can be taken, this is NOT high-risk.\n\n"
+    "If you are unsure about grounding, set is_valid = false but keep high_risk = false unless the query itself indicates high-risk.\n\n"
+    "You MUST respond ONLY with a JSON object:\n"
+    "{ \"is_valid\": true or false, \"confidence\": number between 0 and 1, \"high_risk\": true or false }\n\n"
+    "- Do NOT add any explanation, text, or notes outside the JSON.\n"
+)
+
+
+    user_prompt = (
+        f"User query:\n{query}\n\n"
+        f"AI answer:\n{answer}\n\n"
+        f"Retrieved legal sections:\n{context_text}\n\n"
+        "Now perform your evaluation and return ONLY the JSON object."
+    )
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    raw = _groq_chat(messages, max_tokens=250, temperature=0.0)
+
+    if not raw:
+        return ValidationResult(is_valid=False, confidence=0.0, high_risk=False)
+
+    try:
+        data = json.loads(raw)
+        return ValidationResult(
+            is_valid=bool(data.get("is_valid", False)),
+            confidence=float(data.get("confidence", 0.0)),
+            high_risk=bool(data.get("high_risk", False)),
+        )
+    except Exception:
+        print("⚠ JSON parsing failed in validation – marking as invalid.")
+        return ValidationResult(is_valid=False, confidence=0.0, high_risk=False)
