@@ -3,7 +3,7 @@ from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 from config import CHROMA_DB_DIR, EMBEDDING_MODEL_NAME
 
-# Load client & embedding model once
+# Load client & embedding model once (best practice)
 client = chromadb.PersistentClient(
     path=CHROMA_DB_DIR,
     settings=Settings(allow_reset=False)
@@ -14,8 +14,10 @@ embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
 def retrieve_sections(query: str, state: str, top_k: int = 5):
     """
-    Real retrieval from Chroma using semantic similarity.
-    State is used to prioritize relevant documents.
+    Retrieve relevant legal sections from Chroma using semantic similarity.
+    - query: normalized English query
+    - state: user's state (e.g., Karnataka)
+    - top_k: number of results to return (default 5)
     """
     if not query:
         return []
@@ -24,13 +26,13 @@ def retrieve_sections(query: str, state: str, top_k: int = 5):
 
     results = collection.query(
         query_embeddings=[query_embedding],
-        n_results=top_k,
+        n_results=top_k,  # 👈 now dynamic
         where={
             "$or": [
                 {"state": state},
                 {"state": "India"}
             ]
-        }
+        } if state else None
     )
 
     docs = []

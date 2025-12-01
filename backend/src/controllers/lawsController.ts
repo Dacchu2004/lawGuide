@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../config/db";
+import axios from "axios";
+
 
 // GET /laws/search?query=&act=&section=
 export const searchLaws = async (req: Request, res: Response) => {
@@ -115,3 +117,30 @@ export const getSectionById = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to fetch section" });
   }
 };
+
+// GET /laws/semantic-search?query=...&state=...&language=...&top_k=...
+export const semanticSearchLaws = async (req: Request, res: Response) => {
+  try {
+    const { query, state, language, top_k } = req.query;
+
+    if (!query) {
+      res.status(400).json({ message: "query is required" });
+    }
+
+    const payload = {
+      query_text: String(query),
+      user_state: state ? String(state) : undefined,
+      user_language: language ? String(language) : undefined,
+      top_k: top_k ? Number(top_k) : 10,
+    };
+
+    const aiUrl = process.env.AI_SERVICE_URL || "http://localhost:8001";
+    const response = await axios.post(`${aiUrl}/search-sections`, payload);
+
+    res.json(response.data);
+  } catch (error: any) {
+    console.error("semanticSearchLaws error:", error?.message || error);
+    res.status(500).json({ message: "Semantic search failed" });
+  }
+};
+

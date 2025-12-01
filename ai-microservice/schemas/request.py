@@ -14,3 +14,10 @@ class QueryRequest(BaseModel):
     query_id:Optional[int]=None
     user_id:Optional[int]=None
     conversation:Optional[List[Conversation]]=None
+
+# 🆕 New: for semantic section search
+class SectionSearchRequest(BaseModel):
+    query_text: str
+    user_state: Optional[str] = None
+    user_language: Optional[str] = None
+    top_k: int = 10  # how many sections to return

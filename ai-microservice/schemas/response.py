@@ -19,3 +19,18 @@ class QueryResponse(BaseModel):
     
     error_type: Optional[str] = None  # Like "unretrievable" "low_confidence" "invalid_query"
     high_risk: bool = False  # Used to trigger caution notifications
+    
+# 🆕 New: for section search API (law browser)
+class SectionSearchResult(BaseModel):
+    act: str
+    section: str
+    text_primary: str       # in user's language
+    text_english: str       # original English law
+    jurisdiction: str
+    source_link: Optional[str] = None
+
+
+class SectionSearchResponse(BaseModel):
+    detected_language: str
+    query_text: str
+    results: List[SectionSearchResult] = Field(default_factory=list)
