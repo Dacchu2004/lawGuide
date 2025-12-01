@@ -31,3 +31,20 @@ model Query {
 
   User       User     @relation(fields: [userId], references: [id])
 }
+
+model LegalSection {
+  id           String   @id             // same ID as used in Chroma docs
+  act          String
+  section      String
+  text         String
+  jurisdiction String?                  // "central" or "state"
+  state        String?                  // e.g., "India"
+  domain       String?                  // e.g., "crime", "property" (we'll fill later)
+  sourceLink   String?  @map("source_link")
+
+  createdAt    DateTime @default(now())
+
+  @@index([act])
+  @@index([section])
+  @@index([domain])
+}

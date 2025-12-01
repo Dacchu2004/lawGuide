@@ -1,4 +1,5 @@
 import os
+import json   # 🆕 REQUIRED FOR EXPORT
 import re
 import argparse
 import logging
@@ -63,7 +64,6 @@ def extract_pdf_sections(pdf_path, act_name, jurisdiction, state):
         except:
             continue
 
-    # Improved regex for section detection
     sections = re.findall(
         r"(?:Section\s*)?(\d+[A-Z]?)[\.\-:\)]\s*(.*?)(?=(?:Section\s*\d+[A-Z]?|^\d+[A-Z]?[\.\-:\)]|\Z))",
         full_text,
@@ -154,7 +154,6 @@ def build_chroma_index(docs):
     texts = [d["text"] for d in docs]
     ids = [d["id"] for d in docs]
 
-    # Ensure no duplicates before indexing
     assert len(ids) == len(set(ids)), "❌ Duplicate IDs found — uniqueness check failed"
 
     embeddings = model.encode(texts, batch_size=32, show_progress_bar=True).tolist()
@@ -192,6 +191,17 @@ def main():
         logging.error("❌ No documents found. Aborting.")
         return
 
+    # 🆕 JSON Export
+    data_dir = os.path.join(base_dir, "data")
+    os.makedirs(data_dir, exist_ok=True)
+
+    out_path = os.path.join(data_dir, "legal_sections.json")
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(docs, f, ensure_ascii=False, indent=2)
+
+    logging.info(f"💾 Exported {len(docs)} sections to {out_path}")
+
+    # Existing step
     build_chroma_index(docs)
 
 
