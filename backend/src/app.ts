@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import prisma from './config/db'; // Prisma import
 import authRoutes from './routes/auth';
 import queryRoutes from "./routes/query";
+import lawsRoutes from "./routes/laws";
+
 
 dotenv.config();
 
@@ -35,5 +37,9 @@ app.use('/api/auth',authRoutes);
 
 //Query routes
 app.use('/api/query',queryRoutes);
+
+//Laws routes
+app.use("/laws", lawsRoutes);
+
 
 export default app;
