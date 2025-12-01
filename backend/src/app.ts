@@ -4,9 +4,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import prisma from './config/db'; // Prisma import
 import authRoutes from './routes/auth';
-import queryRoutes from "./routes/query";
 import lawsRoutes from "./routes/laws";
-
+import aiRoutes from "./routes/ai";
 
 dotenv.config();
 
@@ -33,13 +32,12 @@ app.get('/test-db', async (req, res) => {
 });
 
 //Auth routes
-app.use('/api/auth',authRoutes);
-
-//Query routes
-app.use('/api/query',queryRoutes);
+app.use('/auth',authRoutes);
 
 //Laws routes
 app.use("/laws", lawsRoutes);
 
+//AI routes
+app.use("/ai", aiRoutes);
 
 export default app;
