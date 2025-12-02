@@ -188,11 +188,11 @@ export default function App() {
         {/* BOTTOM: Typewriter Footer */}
         <div style={{ height: "300px", width: "100%", background: "white" }}>
           <TypewriterScene
-            mode="login"
+            mode={mode}
             email={email}
             password={pwd}
-            // language={language}
-            // state={state}
+            language={language}
+            state={state}
           />
         </div>
       </div>
