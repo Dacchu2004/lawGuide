@@ -1,3 +1,4 @@
+// frontend/src/utils/paperTexture.ts
 import * as THREE from "three";
 
 export function createPaperCanvas(
@@ -11,15 +12,25 @@ export function createPaperCanvas(
   const ctx = canvas.getContext("2d")!;
 
   const img = new Image();
+  img.crossOrigin = "anonymous"; // safe for local dev
   img.src = paperImageSrc;
 
+  // draw only after image loads
   img.onload = () => {
-    ctx.drawImage(img, 0, 0, width, height);
+    try {
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+    } catch (e) {
+      // in some edge cases (CORS) drawImage can fail — log it
+      console.error("Error drawing paper image on canvas:", e);
+    }
   };
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  texture.flipY = false;
   texture.needsUpdate = true;
 
-  return { canvas, ctx, texture };
+  // return img so caller can redraw it on every update
+  return { canvas, ctx, texture, img };
 }

@@ -1,90 +1,142 @@
-import { useEffect, useRef } from "react";
-import { Canvas } from "@react-three/fiber";
+import { useRef, useEffect } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { createPaperCanvas } from "../utils/paperTexture";
+import { usePaperForm } from "../hooks/usePaperForm";
 
-function TypewriterModel({ typedText }: { typedText: string }) {
-  const group = useRef<THREE.Group>(null);
-  const gltf = useGLTF("/assets/typewriter.glb");
+type Props = {
+  mode: "login" | "signup";
+  email: string;
+  password: string;
+  language?: string;
+  state?: string;
+};
 
-  const paper = useRef<any>(null);
-
-  // Load Paper Texture
-  useEffect(() => {
-    const { canvas, ctx, texture } = createPaperCanvas(
-      2048,
-      2048,
-      "/assets/gov-paper.jpg"
-    );
-
-    paper.current = { canvas, ctx, texture };
-
-    const paperMesh = gltf.scene.getObjectByName("Paper") as THREE.Mesh;
-    if (paperMesh) {
-      const material = new THREE.MeshStandardMaterial({ map: texture });
-      if (material.map) material.map.flipY = false;
-      paperMesh.material = material;
-      paperMesh.material.needsUpdate = true;
-    }
-  }, [gltf]);
-
-  // Draw text on paper
-  useEffect(() => {
-    if (!paper.current) return;
-    const { ctx, texture } = paper.current;
-
-    ctx.clearRect(0, 0, 2048, 2048);
-
-    ctx.font = "48px 'Times New Roman'";
-    ctx.fillStyle = "#111";
-
-    let x = 200;
-    let y = 450;
-
-    typedText.split("").forEach((char) => {
-      ctx.fillText(char, x, y);
-      x += 32;
-      if (x > 1600) {
-        x = 200;
-        y += 70;
-      }
-    });
-
-    texture.needsUpdate = true;
-  }, [typedText]);
+export default function TypewriterScene(props: Props) {
+  const { texture } = usePaperForm(props);
 
   return (
-    <group
-      ref={group}
-      scale={0.25}               // slightly larger
-      position={[0, -0.2, 0.5]}    // LIFT TYPEWRITER UP
-      rotation={[0, Math.PI * 2.0, 0]}
+    <Canvas
+      style={{ width: "100%", height: "100%" }}
+      camera={{ position: [0, 0.8, 3.5], fov: 35 }}
     >
-      <primitive object={gltf.scene} />
-    </group>
+      <ambientLight intensity={1.0} />
+      <directionalLight intensity={1.2} position={[4, 8, 4]} />
+
+      <TypewriterModel {...props} texture={texture} />
+
+      <OrbitControls enableZoom={false} target={[0, 0, 0]} />
+    </Canvas>
   );
 }
 
-export default function TypewriterScene({ typedText }: { typedText: string }) {
+/* ---------------------------------------------------------
+   Model component — REUSING baked paper mesh
+--------------------------------------------------------- */
+function TypewriterModel({
+  mode,
+  email,
+  password,
+  language,
+  state,
+  texture,
+}: Props & { texture: THREE.CanvasTexture | null }) {
+  const gltf = useGLTF("/assets/typewriter.glb");
+  const paperMeshRef = useRef<THREE.Mesh | null>(null);
+  const initialY = useRef<number>(0);
+  const shakeIntensity = useRef<number>(0);
+  const groupRef = useRef<THREE.Group>(null);
+
+  // Adjust these to calibrate the paper position
+  const LOGIN_OFFSET = -0.35; // Move paper DOWN to show top section
+  const SIGNUP_OFFSET = 0.0; // Default position (seems to be signup area)
+
+  // Trigger shake on typing
+  useEffect(() => {
+    shakeIntensity.current = 0.5;
+  }, [email, password, language, state]);
+
+  useFrame((_state, delta) => {
+    if (!paperMeshRef.current) return;
+
+    // Calculate total characters typed (for subtle movement)
+    const totalChars =
+      (email?.length || 0) +
+      (password?.length || 0) +
+      (language?.length || 0) +
+      (state?.length || 0);
+
+    // Determine base position based on mode
+    const modeOffset = mode === "login" ? LOGIN_OFFSET : SIGNUP_OFFSET;
+
+    // Target position: Base + Typing Progress
+    const targetY = initialY.current + modeOffset + totalChars * 0.0005;
+
+    // Smooth lerp
+    paperMeshRef.current.position.y = THREE.MathUtils.lerp(
+      paperMeshRef.current.position.y,
+      targetY,
+      delta * 5
+    );
+
+    // Shake animation
+    if (groupRef.current) {
+      shakeIntensity.current = THREE.MathUtils.lerp(
+        shakeIntensity.current,
+        0,
+        delta * 10
+      );
+      const shake = shakeIntensity.current * 0.05;
+      groupRef.current.position.x = (Math.random() - 0.5) * shake;
+      groupRef.current.position.y = -0.5 + (Math.random() - 0.5) * shake;
+      groupRef.current.position.z = (Math.random() - 0.5) * shake;
+    }
+  });
+
+  useEffect(() => {
+    console.log("🟦 GLTF Loaded — Scene Graph:");
+    gltf.scene.traverse((o) => console.log(o.name));
+
+    // Find baked paper plane
+    // Prioritize specific mesh name 'paper_paper_0' as 'paper' might be a Group
+    const baked =
+      (gltf.scene.getObjectByName("paper_paper_0") as THREE.Mesh | undefined) ||
+      (gltf.scene.getObjectByName("paper") as THREE.Mesh | undefined);
+
+    if (baked) {
+      paperMeshRef.current = baked;
+      if (initialY.current === 0) initialY.current = baked.position.y;
+    }
+
+    if (!baked) {
+      console.warn("❗ Paper mesh not found");
+      return;
+    }
+
+    if (!baked.material) {
+      console.warn(
+        "❗ Paper object found but has no material (likely a Group)"
+      );
+      return;
+    }
+
+    if (texture) {
+      // Replace baked material map safely
+      if (Array.isArray(baked.material)) {
+        baked.material.forEach((m) => {
+          (m as THREE.MeshStandardMaterial).map = texture;
+          m.needsUpdate = true;
+        });
+      } else {
+        (baked.material as THREE.MeshStandardMaterial).map = texture;
+        baked.material.needsUpdate = true;
+      }
+    }
+  }, [gltf, texture]);
+
   return (
-    <Canvas
-      style={{ background: "#d6d6d6" }} // FIX: remove white background
-      camera={{
-        position: [0, 1.5, 6],  // LIFT CAMERA UP
-        fov: 35,
-      }}
-    >
-      <ambientLight intensity={1} />
-      <directionalLight intensity={1.2} position={[4, 8, 4]} />
-
-      <TypewriterModel typedText={typedText} />
-
-      <OrbitControls
-        enableZoom={false}
-        maxPolarAngle={Math.PI / 2.2}
-        minPolarAngle={Math.PI / 4}
-      />
-    </Canvas>
+    <group ref={groupRef} scale={0.5} position={[0, -0.5, 0]}>
+      <primitive object={gltf.scene} />
+    </group>
   );
 }
