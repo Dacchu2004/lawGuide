@@ -8,6 +8,8 @@ type UsePaperFormProps = {
   password: string;
   language?: string;
   state?: string;
+  username?: string;
+  termsAccepted?: boolean;
 };
 
 export function usePaperForm({
@@ -16,6 +18,8 @@ export function usePaperForm({
   password,
   language,
   state,
+  username,
+  termsAccepted,
 }: UsePaperFormProps) {
   const texRef = useRef<any>(null);
   const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
@@ -83,7 +87,7 @@ export function usePaperForm({
       context.drawImage(image, 0, 0, w, h);
 
       context.fillStyle = "#000";
-      context.font = "bold 42px 'Courier New'";
+      context.font = "bold 42px 'Times New Roman'";
       context.textBaseline = "bottom";
 
       // LOGIN COORDS
@@ -95,6 +99,9 @@ export function usePaperForm({
       const signupPass = { x: 206, y: 1086 };
       const signupLang = { x: 340, y: 1118 };
       const signupState = { x: 365, y: 1155 };
+      
+      // TERMS COORDS
+      const termsSignature = { x: 205, y: 2050 };
 
       if (mode === "login") {
         context.fillText(email ?? "", loginEmail.x, loginEmail.y);
@@ -113,13 +120,20 @@ export function usePaperForm({
 
         if (language) context.fillText(language, signupLang.x, signupLang.y);
         if (state) context.fillText(state, signupState.x, signupState.y);
+        
+        if (termsAccepted) {
+           context.font = "bold 50px 'Times New Roman'";
+           context.fillStyle = "#f31212ff"; // Dark Blue for signature
+           const signatureText = username ? `[ ${username} Agreed & Signed ]` : "[ Agreed & Signed ]";
+           context.fillText(signatureText, termsSignature.x, termsSignature.y);
+        }
       }
       context.restore();
     };
 
     if (img.complete) draw();
     else img.onload = draw;
-  }, [email, password, language, state, mode]);
+  }, [email, password, language, state, mode, username, termsAccepted]);
 
   return { texture, canvasRef };
 }
