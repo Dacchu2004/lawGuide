@@ -1,8 +1,10 @@
 // frontend/src/App.tsx
+
 import { useState, useRef, useEffect } from "react";
 import TypewriterScene from "./components/TypewriterScene";
 import { usePaperForm } from "./hooks/usePaperForm";
 import useSound from "use-sound";
+import { loginRequest, signupRequest } from "./api/auth";
 
 const clickSfx = "/assets/key-click.wav";
 
@@ -14,6 +16,7 @@ export default function App() {
   const [language, setLanguage] = useState("");
   const [state, setState] = useState("");
   const [username, setUsername] = useState("");
+
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsViewed, setTermsViewed] = useState(false);
 
@@ -25,7 +28,15 @@ export default function App() {
 
   const [playClick] = useSound(clickSfx, { volume: 0.6 });
 
-  const handleKeyDown = () => playClick();
+  // ✅ auth UI state
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const handleKeyDown = () => {
+    playClick();
+    setErrorMsg(null); // clear any previous error while user is typing
+  };
 
   useEffect(() => {
     setScrollTarget(mode === "login" ? "login" : "signup");
@@ -33,6 +44,7 @@ export default function App() {
 
   useEffect(() => {
     if (!scrollContainerRef.current) return;
+
     const container = scrollContainerRef.current;
 
     setTimeout(() => {
@@ -50,7 +62,7 @@ export default function App() {
     }, 80);
   }, [scrollTarget]);
 
-  // ✅ This is the ONLY PLACE we call usePaperForm
+  // 🎯 This drives both the flat paper canvas and the 3D paper
   const { canvasRef, texture } = usePaperForm({
     mode,
     email,
@@ -60,6 +72,80 @@ export default function App() {
     username,
     termsAccepted,
   });
+
+  /* -------------------------------------------------
+     Submit handler: calls backend
+  ------------------------------------------------- */
+  const handleSubmit = async () => {
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    // basic front-end validation
+    if (!email || !pwd) {
+      setErrorMsg("Email and password are required.");
+      return;
+    }
+
+    if (mode === "signup") {
+      if (!state || !language) {
+        setErrorMsg("State and language are required for signup.");
+        return;
+      }
+      if (!termsAccepted) {
+        setErrorMsg("Please accept the terms & conditions to signup.");
+        return;
+      }
+    }
+
+    try {
+      setLoading(true);
+
+      if (mode === "login") {
+        const data = await loginRequest({ email, password: pwd });
+
+        // store token & user
+        localStorage.setItem("lg_token", data.token);
+        localStorage.setItem("lg_user", JSON.stringify(data.user));
+
+        setSuccessMsg("Login successful!");
+        console.log("Logged in user:", data.user);
+      } else {
+        const data = await signupRequest({
+          email,
+          password: pwd,
+          state,
+          language,
+          username: username || undefined,
+        });
+
+        // Optional: auto-login after signup
+        // Here we just store token if backend returns it; currently signupController doesn’t.
+        // For now, we just show success message.
+        setSuccessMsg("Signup successful! You can now login.");
+        console.log("Signed up user:", data.user);
+
+        // Optionally switch mode after signup:
+        setMode("login");
+      }
+    } catch (err: any) {
+      console.error("Auth error:", err);
+
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Something went wrong. Please try again.";
+
+      setErrorMsg(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchMode = () => {
+    setMode((prev) => (prev === "login" ? "signup" : "login"));
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  };
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
@@ -78,6 +164,19 @@ export default function App() {
         <h2 style={{ marginBottom: "20px", fontSize: "1.8rem" }}>
           {mode === "login" ? "Login" : "Signup"}
         </h2>
+
+        {/* STATUS MESSAGES */}
+        {errorMsg && (
+          <p style={{ color: "#f97373", marginBottom: "10px" }}>
+            {errorMsg}
+          </p>
+        )}
+
+        {successMsg && (
+          <p style={{ color: "#4ade80", marginBottom: "10px" }}>
+            {successMsg}
+          </p>
+        )}
 
         {/* EMAIL */}
         <input
@@ -186,7 +285,7 @@ export default function App() {
               }}
             />
 
-            {/* TERMS */}
+            {/* TERMS VIEW + ACCEPT */}
             <button
               onClick={() => {
                 setTermsViewed(true);
@@ -229,24 +328,40 @@ export default function App() {
 
         {/* SUBMIT BUTTON */}
         <button
+          onClick={handleSubmit}
+          disabled={loading}
           style={{
             width: "100%",
             padding: "12px",
-            background: "#3B82F6",
+            background: loading ? "#1d4ed8" : "#3B82F6",
+            opacity: loading ? 0.7 : 1,
             color: "white",
             borderRadius: "8px",
             border: "none",
             fontWeight: "bold",
             marginTop: "20px",
+            cursor: loading ? "not-allowed" : "pointer",
           }}
         >
-          {mode === "login" ? "Login" : "Signup"}
+          {loading
+            ? mode === "login"
+              ? "Logging in..."
+              : "Signing up..."
+            : mode === "login"
+            ? "Login"
+            : "Signup"}
         </button>
 
         {/* SWITCH MODE */}
         <p
-          style={{ marginTop: "20px", cursor: "pointer", textAlign: "center" }}
-          onClick={() => setMode(mode === "login" ? "signup" : "login")}
+          style={{
+            marginTop: "20px",
+            cursor: "pointer",
+            textAlign: "center",
+            color: "#94A3B8",
+            fontSize: "0.9rem",
+          }}
+          onClick={switchMode}
         >
           {mode === "login"
             ? "Don't have an account? Signup"
@@ -254,9 +369,9 @@ export default function App() {
         </p>
       </div>
 
-      {/* RIGHT SIDE */}
+      {/* RIGHT SIDE (paper + typewriter) */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* Top canvas (flat paper) */}
+        {/* TOP: flat paper canvas */}
         <div
           ref={scrollContainerRef}
           style={{
@@ -276,7 +391,7 @@ export default function App() {
           />
         </div>
 
-        {/* Bottom Typewriter */}
+        {/* BOTTOM: 3D typewriter */}
         <div style={{ height: "300px" }}>
           <TypewriterScene
             mode={mode}
@@ -284,7 +399,7 @@ export default function App() {
             password={pwd}
             language={language}
             state={state}
-            texture={texture} // ✅ passed properly
+            texture={texture}
           />
         </div>
       </div>
