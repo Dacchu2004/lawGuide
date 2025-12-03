@@ -1,12 +1,14 @@
+// frontend/src/App.tsx
 import { useState, useRef, useEffect } from "react";
 import TypewriterScene from "./components/TypewriterScene";
 import { usePaperForm } from "./hooks/usePaperForm";
 import useSound from "use-sound";
-// File is in public/assets/key-click.wav
+
 const clickSfx = "/assets/key-click.wav";
 
 export default function App() {
   const [mode, setMode] = useState<"login" | "signup">("login");
+
   const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
   const [language, setLanguage] = useState("");
@@ -23,40 +25,33 @@ export default function App() {
 
   const [playClick] = useSound(clickSfx, { volume: 0.6 });
 
-  const handleKeyDown = () => {
-    playClick();
-  };
+  const handleKeyDown = () => playClick();
 
-  // Update scroll target when mode changes
   useEffect(() => {
     setScrollTarget(mode === "login" ? "login" : "signup");
   }, [mode]);
 
-  // Auto-scroll logic
   useEffect(() => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
+    if (!scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
 
-      // Small delay to ensure layout is calculated
-      setTimeout(() => {
-        if (scrollTarget === "login") {
-          container.scrollTo({ top: 30, behavior: "smooth" });
-        } else if (scrollTarget === "signup") {
-          // Target the "User Signup" section (approx 40% down)
-          const signupScrollPos = container.scrollHeight * 0.4;
-          container.scrollTo({ top: signupScrollPos, behavior: "smooth" });
-        } else if (scrollTarget === "terms") {
-          container.scrollTo({
-            top: container.scrollHeight,
-            behavior: "smooth",
-          });
-        }
-      }, 100);
-    }
+    setTimeout(() => {
+      if (scrollTarget === "login") {
+        container.scrollTo({ top: 30, behavior: "smooth" });
+      } else if (scrollTarget === "signup") {
+        const signupPos = container.scrollHeight * 0.4;
+        container.scrollTo({ top: signupPos, behavior: "smooth" });
+      } else if (scrollTarget === "terms") {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    }, 80);
   }, [scrollTarget]);
 
-  // Use the hook to drive the background canvas
-  const { canvasRef } = usePaperForm({
+  // ✅ This is the ONLY PLACE we call usePaperForm
+  const { canvasRef, texture } = usePaperForm({
     mode,
     email,
     password: pwd,
@@ -68,7 +63,7 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
-      {/* LEFT FORM */}
+      {/* LEFT SIDE FORM */}
       <div
         style={{
           width: "40%",
@@ -84,6 +79,7 @@ export default function App() {
           {mode === "login" ? "Login" : "Signup"}
         </h2>
 
+        {/* EMAIL */}
         <input
           type="text"
           placeholder="Email"
@@ -104,6 +100,7 @@ export default function App() {
           }}
         />
 
+        {/* PASSWORD */}
         <input
           type="password"
           placeholder="Password"
@@ -126,6 +123,7 @@ export default function App() {
 
         {mode === "signup" && (
           <>
+            {/* USERNAME */}
             <input
               type="text"
               placeholder="Username"
@@ -146,6 +144,7 @@ export default function App() {
               }}
             />
 
+            {/* LANGUAGE */}
             <input
               type="text"
               placeholder="Preferred Language"
@@ -165,6 +164,8 @@ export default function App() {
                 color: "white",
               }}
             />
+
+            {/* STATE */}
             <input
               type="text"
               placeholder="State / Union Territory"
@@ -185,64 +186,48 @@ export default function App() {
               }}
             />
 
-            <div style={{ marginBottom: "10px" }}>
-              <button
-                onClick={() => {
-                  setTermsViewed(true);
-                  setScrollTarget("terms");
-                }}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#3B82F6",
-                  textDecoration: "underline",
-                  cursor: "pointer",
-                  padding: 0,
-                  fontSize: "0.9rem",
-                  marginBottom: "10px",
-                }}
-              >
-                View Terms & Conditions
-              </button>
-            </div>
-
-            <div
+            {/* TERMS */}
+            <button
+              onClick={() => {
+                setTermsViewed(true);
+                setScrollTarget("terms");
+              }}
               style={{
-                display: "flex",
-                alignItems: "start",
-                marginBottom: "20px",
+                background: "none",
+                border: "none",
+                color: "#3B82F6",
+                textDecoration: "underline",
+                cursor: "pointer",
+                marginBottom: "10px",
               }}
             >
+              View Terms & Conditions
+            </button>
+
+            <div style={{ display: "flex", alignItems: "start" }}>
               <input
                 type="checkbox"
-                id="terms"
                 checked={termsAccepted}
                 disabled={!termsViewed}
                 onChange={(e) => {
                   setTermsAccepted(e.target.checked);
-                  setScrollTarget("terms");
                   handleKeyDown();
                 }}
-                style={{
-                  marginTop: "5px",
-                  marginRight: "10px",
-                  cursor: termsViewed ? "pointer" : "not-allowed",
-                }}
+                style={{ marginTop: "5px", marginRight: "10px" }}
               />
               <label
-                htmlFor="terms"
                 style={{
                   fontSize: "0.9rem",
                   color: termsViewed ? "#CBD5E1" : "#64748B",
                 }}
               >
-                I have read the terms and conditions carefully and agree to
-                that.
+                I have read the terms and agree.
               </label>
             </div>
           </>
         )}
 
+        {/* SUBMIT BUTTON */}
         <button
           style={{
             width: "100%",
@@ -252,19 +237,15 @@ export default function App() {
             borderRadius: "8px",
             border: "none",
             fontWeight: "bold",
-            marginBottom: "10px",
+            marginTop: "20px",
           }}
         >
           {mode === "login" ? "Login" : "Signup"}
         </button>
 
+        {/* SWITCH MODE */}
         <p
-          style={{
-            textAlign: "center",
-            color: "#94A3B8",
-            cursor: "pointer",
-            fontSize: "0.9rem",
-          }}
+          style={{ marginTop: "20px", cursor: "pointer", textAlign: "center" }}
           onClick={() => setMode(mode === "login" ? "signup" : "login")}
         >
           {mode === "login"
@@ -273,46 +254,37 @@ export default function App() {
         </p>
       </div>
 
-      {/* RIGHT SIDE: Paper Form (Top) + Typewriter (Bottom) */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          background: "white",
-        }}
-      >
-        {/* TOP: Paper Form Display */}
+      {/* RIGHT SIDE */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Top canvas (flat paper) */}
         <div
           ref={scrollContainerRef}
           style={{
             flex: 1,
-            display: "block", // Changed from flex to block
-            position: "relative",
-            overflowY: "auto", // Enable vertical scrolling
+            overflowY: "auto",
             padding: "10px",
-            scrollBehavior: "smooth",
           }}
         >
           <canvas
             ref={canvasRef}
             style={{
+              width: "98%",
+              height: "auto",
               display: "block",
-              width: "98%", // Full width, no horizontal scroll
-              height: "auto", // Auto height to maintain aspect ratio
-              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
             }}
           />
         </div>
 
-        {/* BOTTOM: Typewriter Footer */}
-        <div style={{ height: "300px", width: "100%", background: "white" }}>
+        {/* Bottom Typewriter */}
+        <div style={{ height: "300px" }}>
           <TypewriterScene
             mode={mode}
             email={email}
             password={pwd}
             language={language}
             state={state}
+            texture={texture} // ✅ passed properly
           />
         </div>
       </div>

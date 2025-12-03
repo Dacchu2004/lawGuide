@@ -1,8 +1,8 @@
+// frontend/src/components/TypewriterScene.tsx
 import { useRef, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { usePaperForm } from "../hooks/usePaperForm";
 
 type Props = {
   mode: "login" | "signup";
@@ -10,10 +10,11 @@ type Props = {
   password: string;
   language?: string;
   state?: string;
+  texture: THREE.CanvasTexture | null; // ✅ now passed from App.tsx
 };
 
 export default function TypewriterScene(props: Props) {
-  const { texture } = usePaperForm(props);
+  const { texture } = props;
 
   return (
     <Canvas
@@ -31,7 +32,7 @@ export default function TypewriterScene(props: Props) {
 }
 
 /* ---------------------------------------------------------
-   Model component — REUSING baked paper mesh
+   Model component — REUSES the baked paper inside the GLB
 --------------------------------------------------------- */
 function TypewriterModel({
   mode,
@@ -40,18 +41,17 @@ function TypewriterModel({
   language,
   state,
   texture,
-}: Props & { texture: THREE.CanvasTexture | null }) {
+}: Props) {
   const gltf = useGLTF("/assets/typewriter.glb");
   const paperMeshRef = useRef<THREE.Mesh | null>(null);
   const initialY = useRef<number>(0);
   const shakeIntensity = useRef<number>(0);
   const groupRef = useRef<THREE.Group>(null);
 
-  // Adjust these to calibrate the paper position
-  const LOGIN_OFFSET = -0.35; // Move paper DOWN to show top section
-  const SIGNUP_OFFSET = 0.0; // Default position (seems to be signup area)
+  const LOGIN_OFFSET = -0.35;
+  const SIGNUP_OFFSET = 0.0;
 
-  // Trigger shake on typing
+  // simulate shake when typing
   useEffect(() => {
     shakeIntensity.current = 0.5;
   }, [email, password, language, state]);
@@ -59,37 +59,33 @@ function TypewriterModel({
   useFrame((_state, delta) => {
     if (!paperMeshRef.current) return;
 
-    // Calculate total characters typed (for subtle movement)
     const totalChars =
       (email?.length || 0) +
       (password?.length || 0) +
       (language?.length || 0) +
       (state?.length || 0);
 
-    // Determine base position based on mode
     const modeOffset = mode === "login" ? LOGIN_OFFSET : SIGNUP_OFFSET;
 
-    // Target position: Base + Typing Progress
     const targetY = initialY.current + modeOffset + totalChars * 0.0005;
 
-    // Smooth lerp
     paperMeshRef.current.position.y = THREE.MathUtils.lerp(
       paperMeshRef.current.position.y,
       targetY,
       delta * 5
     );
 
-    // Shake animation
     if (groupRef.current) {
       shakeIntensity.current = THREE.MathUtils.lerp(
         shakeIntensity.current,
         0,
         delta * 10
       );
-      const shake = shakeIntensity.current * 0.05;
-      groupRef.current.position.x = (Math.random() - 0.5) * shake;
-      groupRef.current.position.y = -0.5 + (Math.random() - 0.5) * shake;
-      groupRef.current.position.z = (Math.random() - 0.5) * shake;
+
+      const s = shakeIntensity.current * 0.05;
+      groupRef.current.position.x = (Math.random() - 0.5) * s;
+      groupRef.current.position.y = -0.5 + (Math.random() - 0.5) * s;
+      groupRef.current.position.z = (Math.random() - 0.5) * s;
     }
   });
 
@@ -97,40 +93,32 @@ function TypewriterModel({
     console.log("🟦 GLTF Loaded — Scene Graph:");
     gltf.scene.traverse((o) => console.log(o.name));
 
-    // Find baked paper plane
-    // Prioritize specific mesh name 'paper_paper_0' as 'paper' might be a Group
+    // paper mesh inside your GLB
     const baked =
-      (gltf.scene.getObjectByName("paper_paper_0") as THREE.Mesh | undefined) ||
-      (gltf.scene.getObjectByName("paper") as THREE.Mesh | undefined);
-
-    if (baked) {
-      paperMeshRef.current = baked;
-      if (initialY.current === 0) initialY.current = baked.position.y;
-    }
+      (gltf.scene.getObjectByName("paper_paper_0") as THREE.Mesh) ||
+      (gltf.scene.getObjectByName("paper") as THREE.Mesh);
 
     if (!baked) {
-      console.warn("❗ Paper mesh not found");
+      console.warn("❗ Paper mesh not found in GLB!");
       return;
     }
 
-    if (!baked.material) {
-      console.warn(
-        "❗ Paper object found but has no material (likely a Group)"
-      );
-      return;
-    }
+    paperMeshRef.current = baked;
+    if (initialY.current === 0) initialY.current = baked.position.y;
 
-    if (texture) {
-      // Replace baked material map safely
-      if (Array.isArray(baked.material)) {
-        baked.material.forEach((m) => {
-          (m as THREE.MeshStandardMaterial).map = texture;
-          m.needsUpdate = true;
-        });
-      } else {
-        (baked.material as THREE.MeshStandardMaterial).map = texture;
-        baked.material.needsUpdate = true;
-      }
+    if (!texture) return;
+
+    // Apply dynamic form texture
+    if (Array.isArray(baked.material)) {
+      baked.material.forEach((m) => {
+        const mat = m as THREE.MeshStandardMaterial;
+        mat.map = texture;
+        mat.needsUpdate = true;
+      });
+    } else {
+      const mat = baked.material as THREE.MeshStandardMaterial;
+      mat.map = texture;
+      mat.needsUpdate = true;
     }
   }, [gltf, texture]);
 
