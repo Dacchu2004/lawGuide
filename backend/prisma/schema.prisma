@@ -12,7 +12,8 @@ model User {
   email     String   @unique
   password  String
   state     String    // default preferred state (required)
-  language  String    // default preferred language (required)
+  language  String   // default preferred language (required)
+  username String
   createdAt DateTime @default(now())
   
   queries   Query[]   // user query history
