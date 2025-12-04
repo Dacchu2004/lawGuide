@@ -4,7 +4,7 @@ import { useAuth } from "./context/AuthContext";
 
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
-import Dashboard from "./pages/Dashboard";
+import HomePage from "./pages/HomePage";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -26,8 +26,8 @@ export default function App() {
 
         {/* ✅ PROTECTED */}
         <Route
-          path="/dashboard"
-          element={user ? <Dashboard /> : <Navigate to="/auth" />}
+          path="/home"
+          element={user ? <HomePage /> : <Navigate to="/auth" />}
         />
       </Routes>
     </BrowserRouter>
