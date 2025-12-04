@@ -102,7 +102,7 @@ export default function AuthPage() {
         login(data.user, data.token); // ✅ same effect as before
 
         setSuccessMsg("Login successful!");
-        navigate("/dashboard");
+        navigate("/home");
       } else {
         const data = await signupRequest({
           email,

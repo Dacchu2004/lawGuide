@@ -14,7 +14,6 @@ import {
   ClipboardList,
   Handshake,
   Bookmark,
-  ArrowRight,
   MapPin,
   Phone,
   Mail,

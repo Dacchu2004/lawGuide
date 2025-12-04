@@ -5,6 +5,8 @@ import { useAuth } from "./context/AuthContext";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import HomePage from "./pages/HomePage";
+import ChatPage from "./pages/ChatPage";
+import LibraryPage from "./pages/LibraryPage";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -28,6 +30,14 @@ export default function App() {
         <Route
           path="/home"
           element={user ? <HomePage /> : <Navigate to="/auth" />}
+        />
+        <Route
+          path="/chat"
+          element={user ? <ChatPage /> : <Navigate to="/auth" />}
+        />
+        <Route
+          path="/library"
+          element={user ? <LibraryPage /> : <Navigate to="/auth" />}
         />
       </Routes>
     </BrowserRouter>
