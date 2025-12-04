@@ -7,10 +7,6 @@ import {
   Scale,
   Globe,
   Check,
-  Menu,
-  X,
-  Filter,
-  ArrowRight,
   Sparkles,
 } from "lucide-react";
 
