@@ -1,39 +1,39 @@
-// frontend/src/api/auth.ts
-import { api } from "./client";
+// src/api/auth.ts
+import api from "./client";
 
-export type User = {
-  id: number;
-  email: string;
-  state: string;
-  language: string;
-  username?: string | null;
-};
-
-export type AuthResponse = {
-  message: string;
-  token: string;
-  user: User;
-};
-
-type SignupPayload = {
+export interface LoginPayload {
   email: string;
   password: string;
-  state: string;
-  language: string;
+}
+
+export interface SignupPayload {
+  email: string;
+  password: string;
   username?: string;
-};
+  language: string;
+  state: string;
+}
 
-type LoginPayload = {
+export interface AuthUser {
+  id: string;
   email: string;
-  password: string;
-};
+  username?: string;
+  language: string;
+  state: string;
+}
 
-export async function signupRequest(payload: SignupPayload): Promise<AuthResponse> {
-  const res = await api.post<AuthResponse>("/auth/signup", payload);
+export interface LoginResponse {
+  user: AuthUser;
+  token: string;
+}
+
+// POST /auth/login
+export async function loginRequest(payload: LoginPayload): Promise<LoginResponse> {
+  const res = await api.post("/auth/login", payload);
   return res.data;
 }
 
-export async function loginRequest(payload: LoginPayload): Promise<AuthResponse> {
-  const res = await api.post<AuthResponse>("/auth/login", payload);
-  return res.data;
+// POST /auth/signup
+export async function signupRequest(payload: SignupPayload): Promise<void> {
+  await api.post("/auth/signup", payload);
 }

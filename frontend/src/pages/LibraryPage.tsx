@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// src/pages/LibraryPage.tsx
+import React, { useEffect, useState } from "react";
 import {
   Search,
   ChevronDown,
@@ -9,34 +10,24 @@ import {
   Check,
   Sparkles,
 } from "lucide-react";
+import { searchLibrary } from "../api/library";
+import type { LibrarySection as ApiLibrarySection } from "../api/library";
 
-// --- Type Definitions ---
-interface LegalSection {
-  id: string;
-  act: string;
-  section: string;
-  title: string;
-  description: string;
-  domain:
-    | "Criminal"
-    | "Property"
-    | "Cyber"
-    | "Family"
-    | "Labour"
-    | "Constitutional"
-    | "Consumer";
-  year: string;
-  details: {
-    fullText: string;
-    aiExplanation: string;
-    offenseType: string;
-    punishment: string;
-    jurisdiction: string;
-    source: string;
-  };
+// --- Type Definitions used inside this page ---
+type DomainType =
+  | "Criminal"
+  | "Property"
+  | "Cyber"
+  | "Family"
+  | "Labour"
+  | "Constitutional"
+  | "Consumer";
+
+interface LegalSection extends ApiLibrarySection {
+  domain: DomainType;
 }
 
-// --- Mock Data ---
+// --- Mock Data (used as fallback & initial UI) ---
 const mockResults: LegalSection[] = [
   {
     id: "1",
@@ -137,10 +128,12 @@ const mockResults: LegalSection[] = [
 ];
 
 const LibraryPage: React.FC = () => {
+  const [results, setResults] = useState<LegalSection[]>(mockResults);
   const [selectedResult, setSelectedResult] = useState<LegalSection>(
     mockResults[0]
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   // Filter States
   const [filters, setFilters] = useState({
@@ -177,11 +170,56 @@ const LibraryPage: React.FC = () => {
     }
   };
 
+  // ================= SEARCH HANDLER =================
+  // WHY:
+  //  - collect active filters
+  //  - call backend /library/search
+  //  - update results list & selectedResult
+  const handleSearch = async () => {
+    setIsSearching(true);
+    try {
+      const activeActs = Object.entries(filters.acts)
+        .filter(([, checked]) => checked)
+        .map(([act]) => act);
+
+      const apiResults = await searchLibrary({
+        query: searchQuery,
+        acts: activeActs,
+        yearMax: filters.yearRange,
+      });
+
+      // If backend returns empty array, keep it; else map to LegalSection
+      const mapped: LegalSection[] = apiResults.map((r) => ({
+        ...r,
+        domain: r.domain as DomainType,
+      }));
+
+      if (mapped.length > 0) {
+        setResults(mapped);
+        setSelectedResult(mapped[0]);
+      } else {
+        setResults([]);
+        setSelectedResult(
+          mockResults[0] // or keep previous selectedResult
+        );
+      }
+    } catch (error) {
+      console.error("Library search failed, falling back to mock data:", error);
+      setResults(mockResults);
+      setSelectedResult(mockResults[0]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Optional: auto-search once on page load
+  useEffect(() => {
+    // handleSearch();
+  }, []);
+
   return (
-    // MAIN CONTAINER: h-screen locks the window scroll.
-    // This creates the "Application" feel instead of a "Website" feel.
-    <div className="h-screen flex flex-col bg-[#F8F9FA] font-sans text-[#1E2128] overflow-hidden">
-      {/* --- 1. NAVBAR (Fixed Height: 83px from CSS) --- */}
+    <div className="h-full flex flex-col bg-[#F8F9FA] font-sans text-[#1E2128] overflow-hidden">
+      {/* --- 1. NAVBAR ---
       <nav className="h-[83px] bg-[#125D95] text-white flex-none flex items-center justify-between px-6 shadow-md z-30">
         <div className="flex items-center gap-3">
           <Scale className="w-8 h-8 text-white" fill="white" />
@@ -190,7 +228,6 @@ const LibraryPage: React.FC = () => {
           </span>
         </div>
 
-        {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8">
           {["Discover", "Chat", "Library", "Rights"].map((item) => (
             <button
@@ -206,7 +243,6 @@ const LibraryPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Right Actions */}
         <div className="hidden md:flex items-center gap-6">
           <div className="flex items-center gap-2 font-medium text-sm cursor-pointer opacity-90 hover:opacity-100">
             <Globe size={18} /> English <ChevronDown size={14} />
@@ -222,9 +258,9 @@ const LibraryPage: React.FC = () => {
             />
           </div>
         </div>
-      </nav>
+      </nav> */}
 
-      {/* --- 2. SEARCH BAR (Fixed Height) --- */}
+      {/* --- 2. SEARCH BAR --- */}
       <div className="h-[80px] bg-white flex-none border-b border-gray-200 flex items-center justify-center px-6 z-20">
         <div className="w-full max-w-5xl flex gap-4">
           <div className="relative flex-1">
@@ -240,18 +276,20 @@ const LibraryPage: React.FC = () => {
               className="w-full h-[52px] pl-14 pr-4 rounded-full border border-gray-200 focus:border-[#258CF4] focus:ring-2 focus:ring-[#258CF4]/20 outline-none transition-all text-[15px] font-open-sans shadow-sm"
             />
           </div>
-          <button className="bg-[#258CF4] hover:bg-blue-600 text-white px-10 h-[52px] rounded-full text-[15px] font-medium transition-colors shadow-sm">
-            Search
+          <button
+            onClick={handleSearch}
+            disabled={isSearching}
+            className="bg-[#258CF4] hover:bg-blue-600 text-white px-10 h-[52px] rounded-full text-[15px] font-medium transition-colors shadow-sm disabled:opacity-70"
+          >
+            {isSearching ? "Searching..." : "Search"}
           </button>
         </div>
       </div>
 
-      {/* --- 3. THREE-PANE LAYOUT (Takes remaining height) --- */}
-      {/* "items-stretch" ensures all columns are visually equal height */}
-      <div className="flex-1 overflow-hidden p-4 md:p-6 w-full max-w-[1600px] mx-auto">
+      {/* --- 3. THREE-PANE LAYOUT --- */}
+      <div className="flex-1 min-h-0 overflow-hidden p-4 md:p-6 w-full max-w-[1600px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-stretch">
-          {/* === LEFT COLUMN: FILTERS (Col Span 3) === */}
-          {/* Internal Scrolling enabled via overflow-y-auto */}
+          {/* LEFT FILTERS */}
           <aside className="hidden lg:flex lg:col-span-3 bg-[#DAECFA]/50 rounded-xl border border-blue-100 flex-col h-full overflow-hidden">
             <div className="p-5 border-b border-blue-200/50 flex justify-between items-center bg-[#DAECFA]/20">
               <h2 className="font-archivo font-bold text-xl text-[#1E2128]">
@@ -260,7 +298,7 @@ const LibraryPage: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-8">
-              {/* Filter: Act (Checkboxes) */}
+              {/* Act Filter */}
               <div>
                 <button className="flex justify-between items-center w-full font-bold text-[#1E2128] mb-3 text-sm">
                   Filter by Act <ChevronUp size={16} />
@@ -276,14 +314,11 @@ const LibraryPage: React.FC = () => {
                           e.preventDefault();
                           toggleAct(act);
                         }}
-                        className={`
-                          w-5 h-5 mt-0.5 rounded border flex-shrink-0 flex items-center justify-center transition-all
-                          ${
-                            checked
-                              ? "bg-[#258CF4] border-[#258CF4]"
-                              : "bg-white border-gray-400 group-hover:border-blue-400"
-                          }
-                        `}
+                        className={`w-5 h-5 mt-0.5 rounded border flex-shrink-0 flex items-center justify-center transition-all ${
+                          checked
+                            ? "bg-[#258CF4] border-[#258CF4]"
+                            : "bg-white border-gray-400 group-hover:border-blue-400"
+                        }`}
                       >
                         {checked && (
                           <Check
@@ -301,7 +336,7 @@ const LibraryPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Filter: Domain (Tags) */}
+              {/* Domain Filter (UI only for now) */}
               <div>
                 <button className="flex justify-between items-center w-full font-bold text-[#1E2128] mb-3 text-sm">
                   Filter by Domain <ChevronDown size={16} />
@@ -318,14 +353,11 @@ const LibraryPage: React.FC = () => {
                   ].map((tag) => (
                     <button
                       key={tag}
-                      className={`
-                        px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all shadow-sm
-                        ${
-                          tag === "Criminal"
-                            ? "bg-[#258CF4] text-white border-transparent"
-                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-                        }
-                      `}
+                      className={`px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all shadow-sm ${
+                        tag === "Criminal"
+                          ? "bg-[#258CF4] text-white border-transparent"
+                          : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                      }`}
                     >
                       {tag}
                     </button>
@@ -333,14 +365,14 @@ const LibraryPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Filter: Jurisdiction (Dropdown style) */}
+              {/* Jurisdiction Placeholder */}
               <div>
                 <button className="flex justify-between items-center w-full font-bold text-[#1E2128] mb-1 text-sm py-2 border-b border-gray-300/50">
                   Filter by Jurisdiction <ChevronDown size={16} />
                 </button>
               </div>
 
-              {/* Filter: Year (Slider) */}
+              {/* Year Slider */}
               <div>
                 <button className="flex justify-between items-center w-full font-bold text-[#1E2128] mb-4 text-sm">
                   Filter by Year <ChevronDown size={16} />
@@ -368,14 +400,27 @@ const LibraryPage: React.FC = () => {
             </div>
 
             <div className="p-5 border-t border-blue-200/50">
-              <button className="w-full h-[40px] border border-[#258CF4] text-[#258CF4] rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors bg-white">
+              <button
+                onClick={() => {
+                  setFilters({
+                    acts: {
+                      "Bharatiya Nyaya Sanhita (BNS) 2023": true,
+                      "Bharatiya Nagarik Suraksha (BNSS)": false,
+                      "Indian Penal Code (IPC)": false,
+                      "Criminal Procedure Code (CrPC)": false,
+                      "IT Act": false,
+                    },
+                    yearRange: 2024,
+                  });
+                }}
+                className="w-full h-[40px] border border-[#258CF4] text-[#258CF4] rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors bg-white"
+              >
                 Reset Filters
               </button>
             </div>
           </aside>
 
-          {/* === MIDDLE COLUMN: SEARCH RESULTS (Col Span 4) === */}
-          {/* Header Fixed, Content Scrolls */}
+          {/* MIDDLE COLUMN: RESULTS */}
           <section className="lg:col-span-4 flex flex-col h-full bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
             <div className="p-5 border-b border-gray-100 bg-white z-10 sticky top-0 flex items-center justify-between">
               <h2 className="font-archivo font-bold text-xl text-[#1E2128]">
@@ -384,26 +429,29 @@ const LibraryPage: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4 bg-white">
-              {mockResults.map((result) => (
+              {results.length === 0 && (
+                <p className="text-sm text-gray-500">
+                  No results yet. Try searching for something like{" "}
+                  <span className="font-semibold">"acid attack"</span> or{" "}
+                  <span className="font-semibold">"IPC 420"</span>.
+                </p>
+              )}
+
+              {results.map((result) => (
                 <div
                   key={result.id}
                   onClick={() => setSelectedResult(result)}
-                  className={`
-                    p-5 rounded-xl border cursor-pointer transition-all duration-200 group relative bg-white
-                    ${
-                      selectedResult.id === result.id
-                        ? "border-[#258CF4] ring-1 ring-[#258CF4]/30 shadow-md"
-                        : "border-gray-200 hover:border-blue-300 hover:shadow-sm"
-                    }
-                  `}
+                  className={`p-5 rounded-xl border cursor-pointer transition-all duration-200 group relative bg-white ${
+                    selectedResult.id === result.id
+                      ? "border-[#258CF4] ring-1 ring-[#258CF4]/30 shadow-md"
+                      : "border-gray-200 hover:border-blue-300 hover:shadow-sm"
+                  }`}
                 >
-                  {/* Card Badges Row */}
                   <div className="flex justify-between items-start mb-4 relative">
                     <div className="relative">
                       <span className="text-[11px] font-bold text-[#258CF4] bg-blue-50 px-2.5 py-1 rounded border border-blue-100 z-10 relative">
                         {result.act}
                       </span>
-                      {/* Decorative Line from Design */}
                       <div
                         className={`absolute top-[50%] left-full w-[150px] h-[1px] ${
                           selectedResult.id === result.id
@@ -435,12 +483,11 @@ const LibraryPage: React.FC = () => {
                   </div>
                 </div>
               ))}
-              <div className="h-8"></div> {/* Spacer */}
+              <div className="h-8" />
             </div>
           </section>
 
-          {/* === RIGHT COLUMN: DETAILS PANE (Col Span 5) === */}
-          {/* Header Fixed, Content Scrolls */}
+          {/* RIGHT COLUMN: DETAILS */}
           <main className="hidden lg:flex lg:col-span-5 bg-[#DAECFA]/30 rounded-xl border border-blue-100 flex-col h-full overflow-hidden">
             <div className="p-6 border-b border-blue-100 bg-[#DAECFA]/10">
               <div className="flex items-center gap-2 mb-2">
@@ -454,16 +501,13 @@ const LibraryPage: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-              {/* Main Body Text */}
               <div className="font-open-sans text-[14px] text-gray-600 leading-7 space-y-4 mb-6">
                 <p>{selectedResult.details.fullText}</p>
               </div>
 
-              {/* Simplified AI Explanation Box */}
               <div className="bg-white rounded-xl p-5 border border-white shadow-sm ring-1 ring-blue-50 mb-6 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#258CF4]"></div>
                 <div className="flex items-center gap-2 mb-2">
-                  {/* Using Sparkles as the AI icon */}
                   <Sparkles size={16} className="text-[#258CF4]" />
                   <h3 className="text-[#258CF4] font-bold text-[14px] font-archivo">
                     Simplified AI Explanation
@@ -474,7 +518,6 @@ const LibraryPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Data Table */}
               <div className="text-[13px] font-open-sans space-y-3">
                 <div className="flex justify-between items-start border-b border-gray-200/50 pb-2">
                   <span className="text-gray-500 font-medium w-1/3">
@@ -513,13 +556,13 @@ const LibraryPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="h-10"></div>
+              <div className="h-10" />
             </div>
           </main>
         </div>
       </div>
 
-      {/* --- CSS FOR MODERN SCROLLBARS (Thin & Minimal) --- */}
+      {/* --- Modern Scrollbars --- */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 5px;

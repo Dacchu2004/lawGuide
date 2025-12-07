@@ -1,52 +1,37 @@
-// frontend/src/context/AuthContext.tsx
+// src/context/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
+import type { AuthUser } from "../api/auth";
 
-type User = {
-  id: number;
-  email: string;
-  state: string;
-  language: string;
-  // add username later if backend sends it
-};
-
-type AuthContextType = {
-  user: User | null;
+interface AuthContextValue {
+  user: AuthUser | null;
   token: string | null;
-  login: (user: User, token: string) => void;
+  login: (user: AuthUser, token: string) => void;
   logout: () => void;
-  loading: boolean; // while checking localStorage on first load
-};
+  isLoading: boolean;
+}
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [user, setUser] = useState<User | null>(null);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 🔁 On first load, read from localStorage
+  // On first load, read from localStorage
   useEffect(() => {
-    try {
-      const storedToken = localStorage.getItem("lg_token");
-      const storedUser = localStorage.getItem("lg_user");
-
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      }
-    } catch (e) {
-      console.error("Failed to read auth from localStorage", e);
-    } finally {
-      setLoading(false);
+    const storedToken = localStorage.getItem("lg_token");
+    const storedUser = localStorage.getItem("lg_user");
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
     }
+    setIsLoading(false);
   }, []);
 
-  const login = (userData: User, jwtToken: string) => {
+  const login = (userData: AuthUser, jwt: string) => {
     setUser(userData);
-    setToken(jwtToken);
-    localStorage.setItem("lg_token", jwtToken);
+    setToken(jwt);
+    localStorage.setItem("lg_token", jwt);
     localStorage.setItem("lg_user", JSON.stringify(userData));
   };
 
@@ -58,17 +43,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Small helper hook for easier use
-export const useAuth = () => {
+export const useAuth = (): AuthContextValue => {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 };
