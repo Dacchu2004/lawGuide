@@ -49,3 +49,11 @@ model LegalSection {
   @@index([section])
   @@index([domain])
 }
+
+  model SectionSummary {
+  id        Int      @id @default(autoincrement())
+  hash      String   @unique
+  summary   String
+  createdAt DateTime @default(now())
+}
+

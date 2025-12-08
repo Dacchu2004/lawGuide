@@ -1,19 +1,10 @@
-// src/pages/LibraryPage.tsx
 import React, { useEffect, useState } from "react";
-import {
-  Search,
-  ChevronDown,
-  ChevronUp,
-  FileText,
-  Check,
-  Sparkles,
-} from "lucide-react";
+import { Search, FileText, Check, Sparkles } from "lucide-react";
 import { searchLibrary, getActs } from "../api/library";
 import { getAISummary } from "../api/ai";
 import type { LibrarySection } from "../api/library";
 import { useAuth } from "../context/AuthContext";
 
-// --- DOMAIN TYPES ---
 type DomainType =
   | "Criminal"
   | "Property"
@@ -38,11 +29,13 @@ const LibraryPage: React.FC = () => {
 
   const [acts, setActs] = useState<string[]>([]);
   const [filters, setFilters] = useState<Record<string, boolean>>({});
+  const [selectedDomain, setSelectedDomain] = useState<string | undefined>();
+  const [selectedJurisdiction, setSelectedJurisdiction] =
+    useState<string | undefined>();
 
   const [aiSummary, setAiSummary] = useState("");
   const [loadingAI, setLoadingAI] = useState(false);
 
-  // ✅ LOAD ACTS FROM REAL DB
   useEffect(() => {
     getActs().then((data) => {
       setActs(data);
@@ -56,19 +49,14 @@ const LibraryPage: React.FC = () => {
     setFilters((prev) => ({ ...prev, [act]: !prev[act] }));
   };
 
-  // ✅ DOMAIN BADGE COLOR
   const getDomainStyle = (domain?: string) => {
     switch (domain) {
-      case "crime":
       case "Criminal":
         return "bg-[#38EAFA] text-black";
-      case "property":
       case "Property":
         return "bg-[#F4A462] text-white";
-      case "cyber":
       case "Cyber":
         return "bg-[#E8C468] text-black";
-      case "family":
       case "Family":
         return "bg-[#F3F4F6] text-gray-700";
       default:
@@ -76,47 +64,75 @@ const LibraryPage: React.FC = () => {
     }
   };
 
-  // ✅ SEARCH HANDLER (REAL DB)
+  // ✅ SAFE SEARCH (NO UI CHANGE)
   const handleSearch = async () => {
-    setIsSearching(true);
-    try {
-      const activeActs = Object.entries(filters)
-        .filter(([, checked]) => checked)
-        .map(([act]) => act);
+  if (!searchQuery.trim()) {
+    setResults([]);
+    setSelectedResult(null);
+    setAiSummary("");
+    return;
+  }
 
-      const data = await searchLibrary({
-        query: searchQuery,
-        act: activeActs.length === 1 ? activeActs[0] : undefined,
-      });
+  setIsSearching(true);
 
-      const mapped: UISection[] = data.map((r) => ({
-        ...r,
-        domainUI: (r.domain as DomainType) || "Unknown",
-      }));
+  try {
+    const activeActs = Object.entries(filters)
+      .filter(([, checked]) => checked)
+      .map(([act]) => act);
 
-      setResults(mapped);
-      setSelectedResult(mapped[0] || null);
-    } catch (err) {
-      console.error("Search failed:", err);
-      setResults([]);
-      setSelectedResult(null);
-    } finally {
-      setIsSearching(false);
+    const data = await searchLibrary({
+      query: searchQuery.trim(),
+      act: activeActs.length === 1 ? activeActs[0] : "",
+      domain: selectedDomain || "",
+      jurisdiction: selectedJurisdiction || "",
+    });
+
+    // ✅ HARD FILTER: remove fake / empty rows
+    const cleaned = (data || []).filter(
+      (r: any) =>
+        r?.text &&
+        typeof r.text === "string" &&
+        r.text.trim().length > 30 &&
+        r.text.trim() !== "..."
+    );
+
+    const mapped: UISection[] = cleaned.map((r: any) => ({
+      ...r,
+      domainUI: (r.domain as DomainType) || "Unknown",
+    }));
+
+    setResults(mapped);
+    setSelectedResult(mapped.length ? mapped[0] : null);
+    setAiSummary("");
+  } catch (err) {
+    console.error("Search failed:", err);
+    setResults([]);
+    setSelectedResult(null);
+    setAiSummary("");
+  } finally {
+    setIsSearching(false);
+  }
+};
+
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      handleSearch();
     }
-  };
+  }, [selectedDomain, selectedJurisdiction, filters]);
 
-  // ✅ AI SUMMARY
   const fetchAISummary = async (section: UISection) => {
+    if (!section?.text) return;
+
     setLoadingAI(true);
     try {
-      const res = await getAISummary({
-        query_text: section.text,
+      const summary = await getAISummary({
+        text: section.text,
         user_state: user?.state,
         user_language: user?.language,
-        top_k: 1,
       });
 
-      setAiSummary(res[0]?.text_primary || "No AI summary available.");
+      setAiSummary(summary || "No AI summary available.");
     } catch {
       setAiSummary("AI service unavailable.");
     } finally {
@@ -141,8 +157,15 @@ const LibraryPage: React.FC = () => {
               placeholder="Search by keyword, section, offence..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !isSearching) {
+                  e.preventDefault();
+                  handleSearch();
+                }
+              }}
               className="w-full h-[52px] pl-14 pr-4 rounded-full border"
             />
+
           </div>
 
           <button
@@ -175,13 +198,64 @@ const LibraryPage: React.FC = () => {
               {act}
             </label>
           ))}
+
+          {/* DOMAIN */}
+          <div className="mt-6">
+            <h3 className="font-bold text-sm mb-2">Domain</h3>
+            {[
+              "Criminal",
+              "Property",
+              "Cyber",
+              "Family",
+              "Consumer",
+              "Labour",
+              "Constitutional",
+            ].map((d) => (
+              <button
+                key={d}
+                onClick={() =>
+                  setSelectedDomain(selectedDomain === d ? undefined : d)
+                }
+                className={`px-3 py-1 text-xs rounded-full border mr-2 mb-2 ${
+                  selectedDomain === d
+                    ? "bg-[#258CF4] text-white"
+                    : "bg-white"
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+
+          {/* JURISDICTION */}
+          <div className="mt-6">
+            <h3 className="font-bold text-sm mb-2">Jurisdiction</h3>
+            {["central", "state"].map((j) => (
+              <button
+                key={j}
+                onClick={() =>
+                  setSelectedJurisdiction(
+                    selectedJurisdiction === j ? undefined : j
+                  )
+                }
+                className={`px-3 py-1 text-xs rounded-full border mr-2 ${
+                  selectedJurisdiction === j
+                    ? "bg-[#258CF4] text-white"
+                    : "bg-white"
+                }`}
+              >
+                {j}
+              </button>
+            ))}
+          </div>
         </aside>
 
-        {/* MIDDLE RESULTS */}
+        {/* MIDDLE RESULTS (CRASH FIX ✅) */}
         <section className="col-span-4 bg-white rounded-xl border overflow-y-auto">
           {results.map((result) => (
             <div
-              key={result.id}
+              key={result.id || `${result.act}-${result.section}`}
+
               onClick={() => setSelectedResult(result)}
               className={`p-5 border-b cursor-pointer ${
                 selectedResult?.id === result.id
@@ -203,8 +277,10 @@ const LibraryPage: React.FC = () => {
               </div>
 
               <h3 className="text-sm font-bold mt-1">{result.section}</h3>
+
+              {/* ✅ THIS LINE FIXES YOUR WHITE SCREEN */}
               <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                {result.text.slice(0, 120)}...
+                {(result.text || "").slice(0, 120)}...
               </p>
             </div>
           ))}
@@ -214,7 +290,7 @@ const LibraryPage: React.FC = () => {
           )}
         </section>
 
-        {/* RIGHT DETAILS */}
+        {/* RIGHT DETAILS – UNCHANGED */}
         <main className="col-span-5 bg-[#DAECFA]/30 rounded-xl border p-6 overflow-y-auto">
           {!selectedResult && <p>Select a result</p>}
 
@@ -228,11 +304,10 @@ const LibraryPage: React.FC = () => {
                 {selectedResult.section}
               </h1>
 
-              <p className="text-sm text-gray-700 mb-5">
+              <p className="text-sm text-gray-700 mb-5 whitespace-pre-wrap">
                 {selectedResult.text}
               </p>
 
-              {/* AI CARD */}
               <div className="bg-white rounded-xl p-5 border relative mb-6">
                 <div className="absolute left-0 top-0 h-full w-1 bg-[#258CF4]" />
                 <div className="flex items-center gap-2 mb-2">
@@ -245,7 +320,7 @@ const LibraryPage: React.FC = () => {
                 {loadingAI ? (
                   <p>Generating...</p>
                 ) : (
-                  <p className="text-sm">{aiSummary}</p>
+                  <p className="text-sm whitespace-pre-wrap">{aiSummary}</p>
                 )}
               </div>
 
