@@ -43,11 +43,75 @@ def _groq_chat(
         return None
 
 
+def classify_intent(query: str) -> str:
+    """
+    Classifies user query into: GENERAL, LEGAL, OFF_TOPIC, ILLEGAL
+    """
+    if not GROQ_API_KEY:
+        return "LEGAL"  # Fallback
+
+    system = (
+        "You are an intent classifier for a legal AI assistant.\n\n"
+        "Classify the user query into exactly ONE of the following:\n\n"
+        "GENERAL → greetings, who are you, what can you do, thanks, small talk\n"
+        "LEGAL → laws, crimes, punishments, FIR, disputes, money, property, family conflicts, violence, police, court\n"
+        "OFF_TOPIC → coding, math, cooking, movies, sports, jokes, random facts\n"
+        "ILLEGAL → escaping crime, harming someone, fraud tactics\n\n"
+        "Rules:\n"
+        "- Any real-world problem involving money/property/violence/disputes = LEGAL\n"
+        "- Instructions to escape law = ILLEGAL\n"
+        "- Respond ONLY with one word from: GENERAL, LEGAL, OFF_TOPIC, ILLEGAL"
+    )
+
+    msgs = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": query}
+    ]
+
+    # Quick classification
+    resp = _groq_chat(msgs, max_tokens=10, temperature=0.0)
+    if not resp:
+        return "LEGAL"
+    
+    intent = resp.upper().strip()
+    # Sanity check
+    if intent not in ["GENERAL", "LEGAL", "OFF_TOPIC", "ILLEGAL"]:
+        return "LEGAL"
+        
+    return intent
+
+
+def chat_general(query: str) -> Optional[str]:
+    """
+    Handles GENERAL queries (greetings, about me)
+    """
+    if not GROQ_API_KEY:
+        return None
+
+    system = (
+        "You are LawGuide AI.\n"
+        "You are polite, friendly, and informative.\n"
+        "If the user greets you or asks who you are, introduce yourself briefly.\n"
+        "If the user says 'ok', 'thanks', 'good', etc., simply acknowledge politely (e.g., 'You're welcome!', 'Glad I could help.').\n"
+        "Do NOT re-introduce yourself unless asked.\n"
+        "If the user asks illegal or harmful questions, you MUST refuse.\n"
+        "Keep responses concise and helpful."
+    )
+
+    msgs = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": query},
+    ]
+
+    return _groq_chat(msgs, temperature=0.4, max_tokens=200)
+
+
 def generate_answer(
     query: str,
     sections: List[Dict[str, Any]],
     explanation_mode: str,
     state: str,
+    target_language: str = "en",
 ) -> Optional[str]:
     """
     Phase 1: Generate an answer grounded ONLY in the retrieved legal sections.
@@ -99,7 +163,7 @@ def generate_answer(
         f"User query: {query}\n\n"
         f"Relevant legal sections:\n{context_text}\n\n"
         f"{style_instruction}\n"
-        "Respond in English only."
+        f"RESPOND STRICTLY IN {target_language.upper()} LANGUAGE."
     )
 
     messages = [

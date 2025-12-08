@@ -1,4 +1,5 @@
 # core/pipeline.py
+import random
 
 from schemas.request import QueryRequest
 from schemas.response import QueryResponse, RetrievedSection
@@ -6,12 +7,57 @@ from services.language import detect_language
 from services.translation import translate_to_english, translate_from_english
 from services.embeddings import retrieve_sections
 from services.reranker import rerank_sections
-from services.llm import generate_answer, validate_answer
+from services.reranker import rerank_sections
+from services.llm import generate_answer, validate_answer, classify_intent, chat_general
 from core.validation import ValidationResult
 from config import CONFIDENCE_THRESHOLD
 
 
 async def process_query(payload: QueryRequest) -> QueryResponse:
+    # 🌟 Step 0: Dynamic Intent Classification (LLM)
+    intent = classify_intent(payload.query_text)
+    print(f"🧠 Detected Intent: {intent}")
+
+    if intent == "GENERAL":
+        reply = chat_general(payload.query_text) or "Hello! I am LawGuide AI."
+        return QueryResponse(
+            status="answer",
+            answer_primary=reply,
+            answer_english=reply,
+            confidence=1.0,
+            detected_language="en",
+            retrieved_sections=[],
+            error_type=None,
+            high_risk=False
+        )
+
+    if intent == "OFF_TOPIC":
+        msg = "I am a legal assistant and can only help with Indian laws, rights, and legal procedures."
+        return QueryResponse(
+            status="refusal",
+            answer_primary=msg,
+            answer_english=msg,
+            confidence=1.0,
+            detected_language="en",
+            retrieved_sections=[],
+            error_type="off_topic",
+            high_risk=False
+        )
+
+    if intent == "ILLEGAL":
+        msg = "I cannot help with illegal activities. If you need legal consequences or support for a lawful situation, I can assist."
+        return QueryResponse(
+            status="refusal",
+            answer_primary=msg,
+            answer_english=msg,
+            confidence=1.0,
+            detected_language="en",
+            retrieved_sections=[],
+            error_type="illegal_refusal",
+            high_risk=True
+        )
+
+    # If intent is LEGAL (or fallback), proceed to RAG pipeline...
     detected_lang = detect_language(payload.query_text, payload.user_language)
 
     normalized_query = translate_to_english(payload.query_text.strip(), detected_lang)
@@ -57,9 +103,10 @@ async def process_query(payload: QueryRequest) -> QueryResponse:
     # Generate primary answer
     draft_answer_en = generate_answer(
         query=normalized_query,
-        sections=reranked,
+        sections=reranked[:5],  # Limit to top 5 to prevent 413 Payload Too Large
         explanation_mode=payload.explanation_mode,
         state=user_state,
+        target_language=detected_lang,
     )
 
     if not draft_answer_en:

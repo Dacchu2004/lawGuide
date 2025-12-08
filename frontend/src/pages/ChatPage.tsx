@@ -1,22 +1,23 @@
 // src/pages/ChatPage.tsx
 import React, { useState, useEffect, useRef } from "react";
-import { sendChatMessage } from "../api/chat";
-import type { ChatMessage } from "../api/chat";
+import {
+  sendChatMessage,
+  getHistorySessions,
+  getHistorySession,
+  createHistorySession,
+} from "../api/chat";
+import type { ChatMessage, ChatSession } from "../api/chat";
 import { useAuth } from "../context/AuthContext";
 import { useLocation } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import {
   Scale,
   Plus,
   Search,
   MessageSquare,
-  Lightbulb,
-  Film,
-  Image as ImageIcon,
-  Cat,
-  CloudSun,
   Menu,
-  BookOpen,
   ShieldAlert,
   PenTool,
   Languages,
@@ -24,32 +25,25 @@ import {
   Mic,
   Send,
   MoreHorizontal,
+  BookOpen,
 } from "lucide-react";
 
 const ChatPage: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [query, setQuery] = useState("");
 
+  // Chat State
+  const [query, setQuery] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
 
+  // History State
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
+
   const { user } = useAuth();
-
-  // Sidebar mock data
-  const historyToday = [
-    { icon: <MessageSquare size={18} />, text: "Helpful AI Ready" },
-    { icon: <Lightbulb size={18} />, text: "Greenhouse Effect Expla..." },
-    { icon: <Film size={18} />, text: "Movie Streaming Help" },
-  ];
-
-  const historyPast = [
-    { icon: <PenTool size={18} />, text: "Web Design Workflow" },
-    { icon: <ImageIcon size={18} />, text: "Photo generation" },
-    { icon: <Cat size={18} />, text: "Cats eat grass" },
-    { icon: <CloudSun size={18} />, text: "Weather Dynamics" },
-  ];
 
   const suggestions = [
     {
@@ -86,36 +80,89 @@ const ChatPage: React.FC = () => {
     if (autoQuery) {
       setQuery(autoQuery);
       setTimeout(() => {
-        handleSend();
+        handleSend(autoQuery);
       }, 300);
     }
+    // Automatically load sessions
+    loadSessions();
   }, []);
+
+  // UseEffect to scroll to bottom
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // ================= SEND HANDLER =================
-  // WHY:
-  //  - Add user message to UI immediately
-  //  - Call backend /ai/chat with user's state/language
-  //  - Show AI reply in chat
-  const handleSend = async () => {
-    const trimmed = query.trim();
-    if (!trimmed || isSending) return;
+  const loadSessions = async () => {
+    try {
+      const data = await getHistorySessions();
+      setSessions(data);
+    } catch (e) {
+      console.error("Failed to load history", e);
+    }
+  };
 
-    const userMsg: ChatMessage = { role: "user", content: trimmed };
-    setMessages((prev) => [...prev, userMsg]);
+  const handleNewChat = async () => {
+    try {
+      const newSession = await createHistorySession();
+      setSessions([newSession, ...sessions]);
+      setCurrentSessionId(newSession.id);
+      setMessages([]);
+      setQuery("");
+      setIsSidebarOpen(false); // Close sidebar on mobile
+    } catch (e) {
+      console.error("Failed to create new session", e);
+    }
+  };
+
+  const handleSelectSession = async (sessionId: number) => {
+    try {
+      setCurrentSessionId(sessionId);
+      const details = await getHistorySession(sessionId);
+
+      // Map backend history to frontend messages
+      const mappedMessages: ChatMessage[] = details.messages.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      }));
+
+      setMessages(mappedMessages);
+      setIsSidebarOpen(false); // Close sidebar on mobile
+    } catch (e) {
+      console.error("Failed to load session", e);
+    }
+  };
+
+  // ================= SEND HANDLER =================
+  const handleSend = async (forcedQuery?: string) => {
+    const text = forcedQuery || query.trim();
+    if (!text || isSending) return;
+
+    // Optimistic Update
+    const userMsg: ChatMessage = { role: "user", content: text };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     setQuery("");
     setIsSending(true);
 
     try {
       const res = await sendChatMessage({
-        query_text: trimmed,
+        query_text: text,
         language_override: user?.language,
         state_override: user?.state,
-        // conversation: messages, // optional: enable later for multi-turn
+        sessionId: currentSessionId || undefined,
       });
+
+      // Handle Session Creation/Update
+      if (res.sessionId && !currentSessionId) {
+        setCurrentSessionId(res.sessionId);
+        loadSessions(); // Reload sidebar to see new title
+      } else if (currentSessionId) {
+        loadSessions(); // Refresh to bump to top
+      }
 
       const replyText =
         res.answer_english || res.answer_primary || "No answer received.";
@@ -173,7 +220,10 @@ const ChatPage: React.FC = () => {
         </div>
 
         <div className="px-4 flex gap-2">
-          <button className="flex-1 h-10 bg-[#171A1F] text-white rounded-lg flex items-center justify-center gap-2 hover:bg-[#262A33] transition-colors">
+          <button
+            onClick={handleNewChat}
+            className="flex-1 h-10 bg-[#171A1F] text-white rounded-lg flex items-center justify-center gap-2 hover:bg-[#262A33] transition-colors"
+          >
             <Plus size={16} />
             <span className="text-sm font-medium">New Consultation</span>
           </button>
@@ -185,33 +235,30 @@ const ChatPage: React.FC = () => {
         <div className="flex-1 overflow-y-auto px-4 mt-6 custom-scrollbar">
           <div className="mb-6">
             <h3 className="text-xs font-medium text-[#171A1F] opacity-60 mb-3 px-2">
-              Today
+              Recent Consultations
             </h3>
-            <ul className="space-y-1">
-              {historyToday.map((item, idx) => (
-                <li
-                  key={idx}
-                  className="flex items-center gap-3 px-3 py-2 text-sm text-[#565D6D] hover:bg-black/5 rounded-md cursor-pointer transition-colors"
-                >
-                  {item.icon}
-                  <span className="truncate">{item.text}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
 
-          <div>
-            <h3 className="text-xs font-medium text-[#171A1F] opacity-60 mb-3 px-2">
-              Previous 7 days
-            </h3>
+            {sessions.length === 0 && (
+              <p className="text-gray-500 text-sm px-4 italic">
+                No history yet.
+              </p>
+            )}
+
             <ul className="space-y-1">
-              {historyPast.map((item, idx) => (
+              {sessions.map((session) => (
                 <li
-                  key={idx}
-                  className="flex items-center gap-3 px-3 py-2 text-sm text-[#565D6D] hover:bg-black/5 rounded-md cursor-pointer transition-colors"
+                  key={session.id}
+                  onClick={() => handleSelectSession(session.id)}
+                  className={`flex items-center gap-3 px-3 py-2 text-sm rounded-md cursor-pointer transition-colors
+                    ${
+                      currentSessionId === session.id
+                        ? "bg-[#379AE6]/20 text-[#125D95] font-semibold"
+                        : "text-[#565D6D] hover:bg-black/5"
+                    }
+                  `}
                 >
-                  {item.icon}
-                  <span className="truncate">{item.text}</span>
+                  <MessageSquare size={18} />
+                  <span className="truncate">{session.title}</span>
                 </li>
               ))}
             </ul>
@@ -228,7 +275,9 @@ const ChatPage: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <span className="text-sm font-bold">Emily</span>
+              <span className="text-sm font-bold">
+                {user?.username || "Guest"}
+              </span>
             </div>
             <button className="text-[#9095A1] hover:text-[#171A1F]">
               <MoreHorizontal size={20} />
@@ -248,71 +297,117 @@ const ChatPage: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 md:p-8 pb-32">
-          <div className="text-center mb-6 md:mb-10 max-w-2xl">
-            <h1 className="text-3xl md:text-5xl font-bold mb-3 text-[#171A1F]">
-              Your AI Legal Companion for India
-            </h1>
-            <p className="text-[#9095A1] text-sm md:text-base italic">
-              Ask questions in English, Hindi, Kannada, Tamil, or any Indian
-              language
-            </p>
-          </div>
-
-          {/* Messages */}
-          <div className="w-full max-w-2xl mb-6 space-y-3">
-            {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`w-full flex ${
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
+          {messages.length === 0 ? (
+            <>
+              <div className="text-center mb-6 md:mb-10 max-w-2xl">
+                <h1 className="text-3xl md:text-5xl font-bold mb-3 text-[#171A1F]">
+                  Your AI Legal Companion for India
+                </h1>
+                <p className="text-[#9095A1] text-sm md:text-base italic">
+                  Ask questions in English, Hindi, Kannada, Tamil, or any Indian
+                  language
+                </p>
+              </div>
+              {/* Suggestions when no chat yet */}
+              <div className="w-full max-w-2xl space-y-3">
+                {suggestions.map((card, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setQuery(card.text);
+                      // Optional: Auto send
+                    }}
+                    className={`
+                        w-full flex items-center p-3 md:p-4 rounded-lg border text-left transition-all hover:shadow-md
+                        ${
+                          (card as any).active
+                            ? "border-[#94C9F2] shadow-[0_0_2px_rgba(23,26,31,0.12)] bg-white"
+                            : "bg-white border-gray-100 hover:border-blue-200"
+                        }
+                    `}
+                  >
+                    <div
+                      className={`w-12 h-12 md:w-[60px] md:h-[60px] rounded-md flex items-center justify-center flex-shrink-0 ${card.bg}`}
+                    >
+                      {card.icon}
+                    </div>
+                    <span className="ml-4 text-sm md:text-lg text-[#171A1F] flex-1">
+                      {card.text}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            /* Messages */
+            <div className="w-full max-w-3xl mb-6 space-y-6">
+              {messages.map((msg, idx) => (
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-3 text-sm md:text-base shadow-sm ${
-                    msg.role === "user"
-                      ? "bg-[#E5F2FF] text-[#171A1F]"
-                      : "bg-white border border-gray-100"
+                  key={idx}
+                  className={`w-full flex ${
+                    msg.role === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Suggestions when no chat yet */}
-          {messages.length === 0 && (
-            <div className="w-full max-w-2xl space-y-3">
-              {suggestions.map((card, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setQuery(card.text)}
-                  className={`
-                    w-full flex items-center p-3 md:p-4 rounded-lg border text-left transition-all hover:shadow-md
-                    ${
-                      (card as any).active
-                        ? "border-[#94C9F2] shadow-[0_0_2px_rgba(23,26,31,0.12)] bg-white"
-                        : "bg-white border-gray-100 hover:border-blue-200"
-                    }
-                  `}
-                >
                   <div
-                    className={`w-12 h-12 md:w-[60px] md:h-[60px] rounded-md flex items-center justify-center flex-shrink-0 ${card.bg}`}
+                    className={`max-w-[85%] rounded-2xl px-5 py-4 text-sm md:text-base shadow-sm leading-relaxed ${
+                      msg.role === "user"
+                        ? "bg-[#379AE6] text-white rounded-br-none"
+                        : "bg-white border border-gray-100 prose prose-sm max-w-none text-[#171A1F] rounded-bl-none shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+                    }`}
                   >
-                    {card.icon}
+                    {msg.role === "user" ? (
+                      msg.content
+                    ) : (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          ul: ({ node, ...props }) => (
+                            <ul className="list-disc pl-4 mb-2" {...props} />
+                          ),
+                          ol: ({ node, ...props }) => (
+                            <ol className="list-decimal pl-4 mb-2" {...props} />
+                          ),
+                          li: ({ node, ...props }) => (
+                            <li className="mb-1" {...props} />
+                          ),
+                          strong: ({ node, ...props }) => (
+                            <strong
+                              className="font-bold text-inherit"
+                              {...props}
+                            />
+                          ),
+                          p: ({ node, ...props }) => (
+                            <p className="mb-2 last:mb-0" {...props} />
+                          ),
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    )}
                   </div>
-                  <span className="ml-4 text-sm md:text-lg text-[#171A1F] flex-1">
-                    {card.text}
-                  </span>
-                </button>
+                </div>
               ))}
+
+              {isSending && (
+                <div className="w-full flex justify-start">
+                  <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-none px-5 py-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                    <div className="flex gap-1.5">
+                      <div className="w-2 h-2 bg-[#379AE6] rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                      <div className="w-2 h-2 bg-[#379AE6] rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                      <div className="w-2 h-2 bg-[#379AE6] rounded-full animate-bounce"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Invisible element to scroll to */}
+              <div ref={endRef} />
             </div>
           )}
         </div>
 
         {/* Input Area */}
-        <div className="absolute bottom-0 w-full bg-gradient-to-t from-white via-white to-transparent pb-6 pt-10 px-4 md:px-0 flex flex-col items-center">
-          <div className="w-full max-w-3xl relative">
+        <div className="absolute bottom-0 w-full bg-gradient-to-t from-white via-white to-white/0 pb-6 pt-10 px-4 md:px-0 flex flex-col items-center z-10">
+          <div className="w-full max-w-3xl relative shadow-[0_4px_20px_rgba(0,0,0,0.08)] rounded-xl">
             <input
               ref={inputRef}
               type="text"
@@ -325,7 +420,7 @@ const ChatPage: React.FC = () => {
                 }
               }}
               placeholder="Type your legal query (e.g., 'Is dowry illegal?')..."
-              className="w-full h-[52px] pl-5 pr-24 rounded-lg border border-[#379AE6] focus:outline-none focus:ring-2 focus:ring-[#379AE6]/20 shadow-sm text-lg placeholder:text-gray-400"
+              className="w-full h-[56px] pl-6 pr-24 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#379AE6] focus:border-transparent text-lg placeholder:text-gray-400 bg-white"
             />
 
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -333,22 +428,21 @@ const ChatPage: React.FC = () => {
                 <Mic size={20} />
               </button>
               <button
-                onClick={handleSend}
+                onClick={() => handleSend()}
                 disabled={isSending || !query.trim()}
                 className={`p-2 transition-colors rounded-full ${
                   query.trim() && !isSending
-                    ? "text-[#379AE6] hover:bg-blue-50"
+                    ? "bg-[#379AE6] text-white hover:bg-blue-600 shadow-md transform hover:scale-105"
                     : "text-[#9095A1]"
                 }`}
               >
-                <Send size={20} />
+                <Send size={18} />
               </button>
             </div>
           </div>
 
-          <p className="mt-3 text-xs text-[#9095A1] text-center px-4">
+          <p className="mt-3 text-xs text-[#9095A1] text-center px-4 font-medium opacity-70">
             LawGuide AI provides legal information, not professional advice.
-            Always consult a verified advocate for court proceedings.
           </p>
         </div>
       </main>

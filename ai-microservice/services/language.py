@@ -35,6 +35,13 @@ def resolve_language_code(user_language: Optional[str]) -> str:
 
 def detect_language(text: str, user_language: Optional[str] = None) -> str:
     """
-    Prefer user profile language; fallback to detection logic later.
+    Detects language preference from text keywords first, then user profile.
     """
+    text_lower = text.lower()
+    
+    # Check for explicit instructions like "in hindi", "in tamil"
+    for name, code in LANG_NAME_TO_CODE.items():
+        if f"in {name.lower()}" in text_lower:
+            return code
+
     return resolve_language_code(user_language)

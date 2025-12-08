@@ -17,6 +17,28 @@ model User {
   createdAt DateTime @default(now())
   
   queries   Query[]   // user query history
+  chatSessions ChatSession[]
+}
+
+model ChatSession {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String   @default("New Chat")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User      User     @relation(fields: [userId], references: [id])
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  sessionId Int
+  role      String   // "user" or "assistant"
+  content   String
+  createdAt DateTime @default(now())
+
+  Session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
 
 model Query {

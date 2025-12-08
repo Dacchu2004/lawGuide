@@ -24,6 +24,7 @@ export const askChatbot = async (req: Request, res: Response) => {
       language_override,
       explanation_mode,
       conversation,
+      sessionId, // Optional session ID
     } = req.body;
 
     if (!query_text || typeof query_text !== "string") {
@@ -42,6 +43,44 @@ export const askChatbot = async (req: Request, res: Response) => {
         state: effectiveState,
         language: effectiveLanguage,
         status: "pending",
+      },
+    });
+
+    // 2.5️⃣ Handle Session & Message Saving
+    let currentSessionId = sessionId ? Number(sessionId) : null;
+    
+    // Create new session if none provided
+    if (!currentSessionId) {
+      const newSession = await prisma.chatSession.create({
+        data: {
+          userId: authUser.id,
+          title: query_text.substring(0, 30) + (query_text.length > 30 ? "..." : ""),
+        },
+      });
+      currentSessionId = newSession.id;
+    } else {
+      // Check if session has default title "New Consultancy" and update it
+      const existingSession = await prisma.chatSession.findUnique({
+        where: { id: currentSessionId },
+        select: { title: true },
+      });
+
+      if (existingSession && existingSession.title === "New Consultancy") {
+        await prisma.chatSession.update({
+          where: { id: currentSessionId },
+          data: {
+            title: query_text.substring(0, 30) + (query_text.length > 30 ? "..." : ""),
+          },
+        });
+      }
+    }
+
+    // Save User Message
+    await prisma.chatMessage.create({
+      data: {
+        sessionId: currentSessionId,
+        role: "user",
+        content: query_text,
       },
     });
 
@@ -66,12 +105,26 @@ export const askChatbot = async (req: Request, res: Response) => {
     const aiData = aiRes.data; // This is QueryResponse from Python
 
     // 5️⃣ Update Query row with AI status/confidence/response
-    await prisma.query.update({
+    // 5️⃣ Update Query row logic handled below
+
+    const aiAnswer = aiData.answer_english || aiData.answer_primary || "I currently have no response.";
+
+    // Save AI Response
+    await prisma.chatMessage.create({
+      data: {
+        sessionId: currentSessionId,
+        role: "assistant", // match schema
+        content: aiAnswer,
+      },
+    });
+
+     // Update request processing status
+     await prisma.query.update({
       where: { id: queryRow.id },
       data: {
         status: aiData.status || "answered",
         confidence: typeof aiData.confidence === "number" ? aiData.confidence : null,
-        aiResponse: aiData.answer_english || aiData.answer_primary || null,
+        aiResponse: aiAnswer,
       },
     });
 
@@ -80,6 +133,8 @@ export const askChatbot = async (req: Request, res: Response) => {
       queryId: queryRow.id,
       userState: effectiveState,
       userLanguage: effectiveLanguage,
+
+        sessionId: currentSessionId, // Return session ID
       ...aiData, // includes status, answer_primary, answer_english, confidence, retrieved_sections, etc.
     });
   } catch (error: any) {
