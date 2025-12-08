@@ -161,6 +161,13 @@ const HomePage: React.FC = () => {
             <input
               type="text"
               placeholder="Search by keyword, case, or section..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  navigate("/home/library", {
+                    state: { query: (e.target as HTMLInputElement).value },
+                  });
+                }
+              }}
               className="w-full h-[60px] pl-12 pr-6 rounded-xl border-2 border-[#DEE1E6] text-[#323743] focus:border-[#258CF4] focus:outline-none text-lg shadow-sm transition"
             />
             <Search
@@ -170,20 +177,23 @@ const HomePage: React.FC = () => {
           </div>
           <div className="flex flex-wrap justify-center gap-4 w-full max-w-5xl">
             {[
-              "Criminal Law",
-              "Property Law",
-              "Group Law",
-              "Corporate Law",
-              "Cyber Law",
-              "Constitutional Law",
-              "Consumer Rights",
-              "Environmental Law",
+              "Criminal",
+              "Property",
+              "Family",
+              "Corporate",
+              "Cyber",
+              "Constitutional",
+              "Consumer",
+              "Labour",
             ].map((tag, index) => (
               <button
                 key={index}
+                onClick={() =>
+                  navigate("/home/library", { state: { domain: tag } })
+                }
                 className="bg-[#379AE6] hover:bg-[#197DCA] text-white px-6 py-2.5 rounded-full font-open-sans font-semibold text-sm md:text-base transition shadow-sm"
               >
-                {tag}
+                {tag} Law
               </button>
             ))}
           </div>
@@ -216,7 +226,14 @@ const HomePage: React.FC = () => {
                 <p className="font-open-sans text-[14px] leading-[23px] text-[#323743] font-normal mb-8 flex-grow">
                   {domain.description}
                 </p>
-                <button className="text-[#258CF4] font-medium text-[14px] leading-[22px] hover:underline text-left mt-auto self-start">
+                <button
+                  className="text-[#258CF4] font-medium text-[14px] leading-[22px] hover:underline text-left mt-auto self-start"
+                  onClick={() =>
+                    navigate("/home/library", {
+                      state: { domain: domain.title.split(" ")[0] },
+                    })
+                  }
+                >
                   Explore
                 </button>
               </div>
@@ -240,7 +257,10 @@ const HomePage: React.FC = () => {
             {quickGuides.map((guide, index) => (
               <div
                 key={index}
-                className="bg-[#379AE6] rounded-xl border border-[#DEE1E6]/20 p-6 md:p-8 text-white relative shadow-sm hover:shadow-lg transition-transform hover:-translate-y-1"
+                onClick={() =>
+                  navigate("/home/chat", { state: { autoQuery: guide.title } })
+                }
+                className="bg-[#379AE6] rounded-xl border border-[#DEE1E6]/20 p-6 md:p-8 text-white relative shadow-sm hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-4 pr-6">
                   <h3 className="font-open-sans font-semibold text-[18px] leading-[28px]">

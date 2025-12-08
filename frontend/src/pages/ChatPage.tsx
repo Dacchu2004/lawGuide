@@ -1,8 +1,9 @@
 // src/pages/ChatPage.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { sendChatMessage } from "../api/chat";
 import type { ChatMessage } from "../api/chat";
 import { useAuth } from "../context/AuthContext";
+import { useLocation } from "react-router-dom";
 
 import {
   Scale,
@@ -26,6 +27,8 @@ import {
 } from "lucide-react";
 
 const ChatPage: React.FC = () => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -76,6 +79,21 @@ const ChatPage: React.FC = () => {
       text: "Can a shopkeeper charge extra for a carry bag?",
     },
   ];
+
+  // ✅ AUTO MESSAGE FROM HOME PAGE
+  useEffect(() => {
+    const autoQuery = (location.state as any)?.autoQuery;
+    if (autoQuery) {
+      setQuery(autoQuery);
+      setTimeout(() => {
+        handleSend();
+      }, 300);
+    }
+  }, []);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   // ================= SEND HANDLER =================
   // WHY:
@@ -296,6 +314,7 @@ const ChatPage: React.FC = () => {
         <div className="absolute bottom-0 w-full bg-gradient-to-t from-white via-white to-transparent pb-6 pt-10 px-4 md:px-0 flex flex-col items-center">
           <div className="w-full max-w-3xl relative">
             <input
+              ref={inputRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Search, FileText, Check, Sparkles } from "lucide-react";
 import { searchLibrary, getActs } from "../api/library";
 import { getAISummary } from "../api/ai";
@@ -21,6 +22,7 @@ interface UISection extends LibrarySection {
 
 const LibraryPage: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
 
   const [results, setResults] = useState<UISection[]>([]);
   const [selectedResult, setSelectedResult] = useState<UISection | null>(null);
@@ -30,8 +32,9 @@ const LibraryPage: React.FC = () => {
   const [acts, setActs] = useState<string[]>([]);
   const [filters, setFilters] = useState<Record<string, boolean>>({});
   const [selectedDomain, setSelectedDomain] = useState<string | undefined>();
-  const [selectedJurisdiction, setSelectedJurisdiction] =
-    useState<string | undefined>();
+  const [selectedJurisdiction, setSelectedJurisdiction] = useState<
+    string | undefined
+  >();
 
   const [aiSummary, setAiSummary] = useState("");
   const [loadingAI, setLoadingAI] = useState(false);
@@ -43,7 +46,16 @@ const LibraryPage: React.FC = () => {
       data.forEach((a) => (map[a] = false));
       setFilters(map);
     });
-  }, []);
+
+    // ✅ HANDLE NAVIGATION STATE
+    const state = location.state as { query?: string; domain?: string } | null;
+    if (state?.query) {
+      setSearchQuery(state.query);
+    }
+    if (state?.domain) {
+      setSelectedDomain(state.domain);
+    }
+  }, [location.state]);
 
   const toggleAct = (act: string) => {
     setFilters((prev) => ({ ...prev, [act]: !prev[act] }));
@@ -66,57 +78,57 @@ const LibraryPage: React.FC = () => {
 
   // ✅ SAFE SEARCH (NO UI CHANGE)
   const handleSearch = async () => {
-  if (!searchQuery.trim()) {
-    setResults([]);
-    setSelectedResult(null);
-    setAiSummary("");
-    return;
-  }
+    // FIX: Allow search if domain is selected, even if query is empty
+    if (!searchQuery.trim() && !selectedDomain) {
+      setResults([]);
+      setSelectedResult(null);
+      setAiSummary("");
+      return;
+    }
 
-  setIsSearching(true);
+    setIsSearching(true);
 
-  try {
-    const activeActs = Object.entries(filters)
-      .filter(([, checked]) => checked)
-      .map(([act]) => act);
+    try {
+      const activeActs = Object.entries(filters)
+        .filter(([, checked]) => checked)
+        .map(([act]) => act);
 
-    const data = await searchLibrary({
-      query: searchQuery.trim(),
-      act: activeActs.length === 1 ? activeActs[0] : "",
-      domain: selectedDomain || "",
-      jurisdiction: selectedJurisdiction || "",
-    });
+      const data = await searchLibrary({
+        query: searchQuery.trim(),
+        act: activeActs.length === 1 ? activeActs[0] : "",
+        domain: selectedDomain || "",
+        jurisdiction: selectedJurisdiction || "",
+      });
 
-    // ✅ HARD FILTER: remove fake / empty rows
-    const cleaned = (data || []).filter(
-      (r: any) =>
-        r?.text &&
-        typeof r.text === "string" &&
-        r.text.trim().length > 30 &&
-        r.text.trim() !== "..."
-    );
+      // ✅ HARD FILTER: remove fake / empty rows
+      const cleaned = (data || []).filter(
+        (r: any) =>
+          r?.text &&
+          typeof r.text === "string" &&
+          r.text.trim().length > 30 &&
+          r.text.trim() !== "..."
+      );
 
-    const mapped: UISection[] = cleaned.map((r: any) => ({
-      ...r,
-      domainUI: (r.domain as DomainType) || "Unknown",
-    }));
+      const mapped: UISection[] = cleaned.map((r: any) => ({
+        ...r,
+        domainUI: (r.domain as DomainType) || "Unknown",
+      }));
 
-    setResults(mapped);
-    setSelectedResult(mapped.length ? mapped[0] : null);
-    setAiSummary("");
-  } catch (err) {
-    console.error("Search failed:", err);
-    setResults([]);
-    setSelectedResult(null);
-    setAiSummary("");
-  } finally {
-    setIsSearching(false);
-  }
-};
-
+      setResults(mapped);
+      setSelectedResult(mapped.length ? mapped[0] : null);
+      setAiSummary("");
+    } catch (err) {
+      console.error("Search failed:", err);
+      setResults([]);
+      setSelectedResult(null);
+      setAiSummary("");
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   useEffect(() => {
-    if (searchQuery.trim()) {
+    if (searchQuery.trim() || selectedDomain) {
       handleSearch();
     }
   }, [selectedDomain, selectedJurisdiction, filters]);
@@ -146,7 +158,6 @@ const LibraryPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-[#F8F9FA] overflow-hidden">
-
       {/* SEARCH BAR */}
       <div className="h-[80px] bg-white border-b flex items-center justify-center px-6">
         <div className="w-full max-w-5xl flex gap-4">
@@ -165,7 +176,6 @@ const LibraryPage: React.FC = () => {
               }}
               className="w-full h-[52px] pl-14 pr-4 rounded-full border"
             />
-
           </div>
 
           <button
@@ -180,7 +190,6 @@ const LibraryPage: React.FC = () => {
 
       {/* 3-PANE LAYOUT */}
       <div className="flex-1 min-h-0 p-6 grid grid-cols-12 gap-6">
-
         {/* LEFT FILTERS */}
         <aside className="col-span-3 bg-[#DAECFA]/40 rounded-xl border p-5 overflow-y-auto">
           <h2 className="font-bold mb-4">Filters</h2>
@@ -217,9 +226,7 @@ const LibraryPage: React.FC = () => {
                   setSelectedDomain(selectedDomain === d ? undefined : d)
                 }
                 className={`px-3 py-1 text-xs rounded-full border mr-2 mb-2 ${
-                  selectedDomain === d
-                    ? "bg-[#258CF4] text-white"
-                    : "bg-white"
+                  selectedDomain === d ? "bg-[#258CF4] text-white" : "bg-white"
                 }`}
               >
                 {d}
@@ -255,7 +262,6 @@ const LibraryPage: React.FC = () => {
           {results.map((result) => (
             <div
               key={result.id || `${result.act}-${result.section}`}
-
               onClick={() => setSelectedResult(result)}
               className={`p-5 border-b cursor-pointer ${
                 selectedResult?.id === result.id
@@ -326,8 +332,7 @@ const LibraryPage: React.FC = () => {
 
               <div className="text-sm text-gray-600">
                 <p>
-                  <b>Jurisdiction:</b>{" "}
-                  {selectedResult.jurisdiction || "India"}
+                  <b>Jurisdiction:</b> {selectedResult.jurisdiction || "India"}
                 </p>
 
                 {selectedResult.sourceLink && (
