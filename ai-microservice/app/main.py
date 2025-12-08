@@ -1,18 +1,30 @@
 # app/main.py
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware   # ✅ ADD THIS
 
-# Existing chatbot imports
-from schemas.request import QueryRequest, SectionSearchRequest   # ⬅ add this
-from schemas.response import QueryResponse, SectionSearchResponse, SectionSearchResult  # ⬅ add this
+# Existing imports
+from schemas.request import QueryRequest, SectionSearchRequest
+from schemas.response import QueryResponse, SectionSearchResponse, SectionSearchResult
 from core.pipeline import process_query
-
-# New imports for semantic search
 from services.language import detect_language
 from services.translation import translate_to_english, translate_from_english
 from services.embeddings import retrieve_sections
 
 app = FastAPI(title="LawGuide India - AI Microservice")
+
+# ✅✅✅ ADD THIS ENTIRE CORS BLOCK ✅✅✅
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# ✅✅✅ END CORS BLOCK ✅✅✅
 
 
 # ======================= Health Check =======================
@@ -22,7 +34,6 @@ def health_check():
 
 
 # ======================= Chatbot Endpoint ======================
-# Keep as is – this is your RAG + LLM flow
 @app.post("/answer", response_model=QueryResponse)
 async def answer_query(payload: QueryRequest):
     return await process_query(payload)
@@ -31,25 +42,15 @@ async def answer_query(payload: QueryRequest):
 # ======================= Semantic Section Search ======================
 @app.post("/search-sections", response_model=SectionSearchResponse)
 async def search_sections(payload: SectionSearchRequest):
-    """
-    Semantic section search (non-chatbot).
-    - Detects query language
-    - Translates to English
-    - Runs Chroma semantic retrieval
-    - Returns both English and user-language versions
-    """
-    # 1️⃣ Detect query language
+
     detected_lang = detect_language(payload.query_text, payload.user_language)
 
-    # 2️⃣ Normalize query
     normalized_query = translate_to_english(payload.query_text.strip(), detected_lang)
     if not normalized_query:
-        normalized_query = payload.query_text.strip()  # Fallback
+        normalized_query = payload.query_text.strip()
 
-    # 3️⃣ Use state from request (default: India)
     user_state = payload.user_state or "India"
 
-    # 4️⃣ Retrieve best-matching sections
     docs = retrieve_sections(normalized_query, user_state, top_k=payload.top_k or 10)
 
     results = []
@@ -64,8 +65,8 @@ async def search_sections(payload: SectionSearchRequest):
             SectionSearchResult(
                 act=d["act"],
                 section=d["section"],
-                text_primary=text_user,      # Localized
-                text_english=text_en,        # Raw / legal English
+                text_primary=text_user,
+                text_english=text_en,
                 jurisdiction=d["jurisdiction"],
                 source_link=d.get("source_link") or None,
             )

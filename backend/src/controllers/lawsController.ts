@@ -6,10 +6,10 @@ import axios from "axios";
 // GET /laws/search?query=&act=&section=
 export const searchLaws = async (req: Request, res: Response) => {
   try {
-    const { query, act, section } = req.query;
-
+    const { query, act } = req.query;
     const where: any = {};
 
+    // ✅ Optional Act filter
     if (act) {
       where.act = {
         contains: String(act),
@@ -17,40 +17,87 @@ export const searchLaws = async (req: Request, res: Response) => {
       };
     }
 
-    if (section) {
-      where.section = {
-        contains: String(section),
-        mode: "insensitive",
-      };
-    }
+    // ✅ ONLY real sections (remove Forms, Schedules, Warrants)
+    where.AND = [
+      {
+        section: {
+          startsWith: "Section",
+        },
+      },
+      {
+        text: {
+          not: {
+            contains: "FORM No.",
+          },
+        },
+      },
+      {
+        text: {
+          not: {
+            contains: "WARRANT",
+          },
+        },
+      },
+      {
+        text: {
+          not: {
+            contains: "BOND",
+          },
+        },
+      },
+      {
+        text: {
+          not: {
+            contains: "SCHEDULE",
+          },
+        },
+      },
+      {
+        text: {
+          not: {
+            contains: "NOTICE",
+          },
+        },
+      },
+    ];
 
-    if (query) {
+    // ✅ Smart user-friendly query handling
+    const q = query ? String(query).trim() : undefined;
+
+    if (q) {
+      const extractedNumber = q.match(/\d+/)?.[0];
+
       where.OR = [
         {
           text: {
-            contains: String(query),
+            contains: q,
             mode: "insensitive",
           },
         },
         {
           act: {
-            contains: String(query),
+            contains: q,
             mode: "insensitive",
           },
         },
-        {
-          section: {
-            contains: String(query),
-            mode: "insensitive",
-          },
-        },
+        ...(extractedNumber
+          ? [
+              {
+                section: {
+                  equals: `Section ${extractedNumber}`, // ✅ EXACT match for numbers
+                },
+              },
+            ]
+          : []),
       ];
     }
 
     const results = await prisma.legalSection.findMany({
       where,
-      take: 50,                 // limit to avoid huge payloads
-      orderBy: { act: "asc" },
+      take: 10,              // ✅ SMALL, HIGH QUALITY RESULT SET
+      orderBy: {
+        section: "asc",
+      },
     });
 
     res.json({ count: results.length, results });
@@ -59,6 +106,9 @@ export const searchLaws = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Search failed" });
   }
 };
+
+
+
 
 // GET /laws/acts
 export const listActs = async (_req: Request, res: Response) => {
@@ -109,6 +159,7 @@ export const getSectionById = async (req: Request, res: Response) => {
 
     if (!section) {
         res.status(404).json({ message: "Section not found" });
+        return;
     }
 
     res.json(section);
@@ -125,6 +176,7 @@ export const semanticSearchLaws = async (req: Request, res: Response) => {
 
     if (!query) {
       res.status(400).json({ message: "query is required" });
+      return;
     }
 
     const payload = {
