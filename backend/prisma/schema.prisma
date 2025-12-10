@@ -79,3 +79,8 @@ model LegalSection {
   createdAt DateTime @default(now())
 }
 
+model NewsletterSubscriber {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  subscribedAt DateTime @default(now())
+}

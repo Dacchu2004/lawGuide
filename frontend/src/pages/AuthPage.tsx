@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Eye, EyeOff, ChevronDown, User, Mail, Lock } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import useSound from "use-sound";
 import { useAuth } from "../context/AuthContext";
 import { loginRequest, signupRequest } from "../api/auth";
@@ -10,6 +10,7 @@ const clickSfx = "/assets/key-click.wav";
 export default function AuthPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [playClick] = useSound(clickSfx, { volume: 0.6 });
 
   // State for Sliding Animation (true = showing Sign Up)
@@ -58,7 +59,13 @@ export default function AuthPage() {
         const data = await loginRequest({ email, password: pwd });
         login(data.user, data.token);
         setSuccessMsg("Login successful!");
-        navigate("/home");
+
+        const destination = location.state?.redirectTo || "/home";
+        // Pass remaining state (like autoQuery) to the destination
+        const destState = { ...location.state };
+        delete destState.redirectTo;
+
+        navigate(destination, { state: destState });
       } else {
         // SIGNUP LOGIC
         await signupRequest({

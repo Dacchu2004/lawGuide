@@ -6,6 +6,7 @@ import prisma from './config/db'; // Prisma import
 import authRoutes from './routes/auth';
 import lawsRoutes from "./routes/laws";
 import aiRoutes from "./routes/ai";
+import newsletterRoutes from "./routes/newsletter";
 
 dotenv.config();
 
@@ -39,5 +40,8 @@ app.use("/laws", lawsRoutes);
 
 //AI routes
 app.use("/ai", aiRoutes);
+
+// Newsletter
+app.use("/newsletter", newsletterRoutes);
 
 export default app;

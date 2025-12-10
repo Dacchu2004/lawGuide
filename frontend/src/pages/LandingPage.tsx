@@ -11,9 +11,46 @@ import {
   Youtube,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { subscribeNewsletter } from "../api/newsletter";
+import { useState } from "react";
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterStatus, setNewsletterStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [newsletterMsg, setNewsletterMsg] = useState("");
+
+  const handleSubscribe = async () => {
+    if (!newsletterEmail.includes("@")) {
+      setNewsletterMsg("Please enter a valid email.");
+      setNewsletterStatus("error");
+      return;
+    }
+
+    try {
+      setNewsletterStatus("loading");
+      const res = await subscribeNewsletter(newsletterEmail);
+      setNewsletterStatus("success");
+      setNewsletterMsg(res.message);
+      setNewsletterEmail("");
+    } catch (err) {
+      setNewsletterStatus("error");
+      setNewsletterMsg("Subscription failed. Try again.");
+    }
+  };
+
+  const handleNavigation = (path: string, state: any = {}) => {
+    if (user) {
+      navigate(path, { state });
+    } else {
+      navigate("/auth", { state: { redirectTo: path, ...state } });
+    }
+  };
 
   return (
     <div className="font-['Inter'] text-[#171A1F] bg-white overflow-x-hidden">
@@ -56,7 +93,7 @@ const LandingPage = () => {
             />
           </div>
           <button
-            onClick={() => navigate("/auth")}
+            onClick={() => handleNavigation("/home")}
             className="h-[36px] px-4 bg-[#379AE6] text-white text-[14px] rounded-[10px] hover:bg-[#197DCA] transition-colors"
           >
             Get started
@@ -79,10 +116,20 @@ const LandingPage = () => {
           </p>
 
           <div className="flex gap-4">
-            <button className="h-[52px] px-6 bg-[#379AE6] text-white text-[18px] rounded-[6px] hover:bg-[#197DCA] transition-colors font-medium">
+            <button
+              onClick={() =>
+                handleNavigation("/home/chat", {
+                  autoQuery: "Help me with a legal issue.",
+                })
+              }
+              className="h-[52px] px-6 bg-[#379AE6] text-white text-[18px] rounded-[6px] hover:bg-[#197DCA] transition-colors font-medium"
+            >
               Chat with AI
             </button>
-            <button className="h-[52px] px-6 border border-[#66BCFF] text-[#66BCFF] text-[18px] rounded-[6px] hover:text-[#007EDE] hover:border-[#007EDE] transition-colors font-medium bg-transparent">
+            <button
+              onClick={() => handleNavigation("/home/library")}
+              className="h-[52px] px-6 border border-[#66BCFF] text-[#66BCFF] text-[18px] rounded-[6px] hover:text-[#007EDE] hover:border-[#007EDE] transition-colors font-medium bg-transparent"
+            >
               Learn more
             </button>
           </div>
@@ -112,7 +159,15 @@ const LandingPage = () => {
                   Civil Law
                 </span>
               </div>
-              <span className="text-[#379AE6] text-[12px] mt-1 cursor-pointer">
+              <span
+                onClick={() =>
+                  handleNavigation("/home/chat", {
+                    autoQuery:
+                      "I have a property dispute. What are my legal rights?",
+                  })
+                }
+                className="text-[#379AE6] text-[12px] mt-1 cursor-pointer hover:underline"
+              >
                 View more
               </span>
             </div>
@@ -134,7 +189,15 @@ const LandingPage = () => {
                   Cyber Law
                 </span>
               </div>
-              <span className="text-[#379AE6] text-[12px] mt-1 cursor-pointer">
+              <span
+                onClick={() =>
+                  handleNavigation("/home/chat", {
+                    autoQuery:
+                      "I was a victim of cyber fraud. What should I do?",
+                  })
+                }
+                className="text-[#379AE6] text-[12px] mt-1 cursor-pointer hover:underline"
+              >
                 View more
               </span>
             </div>
@@ -156,7 +219,14 @@ const LandingPage = () => {
                   Criminal
                 </span>
               </div>
-              <span className="text-[#379AE6] text-[12px] mt-1 cursor-pointer">
+              <span
+                onClick={() =>
+                  handleNavigation("/home/chat", {
+                    autoQuery: "What are women's safety laws in India?",
+                  })
+                }
+                className="text-[#379AE6] text-[12px] mt-1 cursor-pointer hover:underline"
+              >
                 View more
               </span>
             </div>
@@ -180,6 +250,9 @@ const LandingPage = () => {
             ].map((tag) => (
               <button
                 key={tag}
+                onClick={() =>
+                  handleNavigation("/home/library", { searchQuery: tag })
+                }
                 className="h-[44px] px-4 bg-white rounded-[22px] text-[16px] text-[#171A1F] hover:bg-[#E6F0FF] transition"
               >
                 {tag}
@@ -280,15 +353,34 @@ const LandingPage = () => {
                 inbox.
               </h2>
 
-              <div className="flex flex-col sm:flex-row gap-4 w-full max-w-[540px]">
-                <input
-                  type="email"
-                  placeholder="Enter your email address"
-                  className="flex-1 h-[52px] px-5 rounded-[6px] text-[#171A1F] text-[18px] bg-white border border-gray-300 focus:outline-none focus:border-[#379AE6] focus:ring-1 focus:ring-[#379AE6]"
-                />
-                <button className="h-[52px] px-8 bg-[#379AE6] text-white font-bold text-[18px] rounded-[6px] hover:bg-[#197DCA] transition-colors shadow-lg shadow-blue-100">
-                  Get Updates
-                </button>
+              <div className="flex flex-col w-full max-w-[540px]">
+                <div className="flex flex-col sm:flex-row gap-4 w-full">
+                  <input
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={newsletterEmail}
+                    onChange={(e) => setNewsletterEmail(e.target.value)}
+                    className="flex-1 h-[52px] px-5 rounded-[6px] text-[#171A1F] text-[18px] bg-white border border-gray-300 focus:outline-none focus:border-[#379AE6] focus:ring-1 focus:ring-[#379AE6]"
+                  />
+                  <button
+                    onClick={handleSubscribe}
+                    disabled={newsletterStatus === "loading"}
+                    className="h-[52px] px-8 bg-[#379AE6] text-white font-bold text-[18px] rounded-[6px] hover:bg-[#197DCA] transition-colors shadow-lg shadow-blue-100 disabled:opacity-70"
+                  >
+                    {newsletterStatus === "loading" ? "..." : "Get Updates"}
+                  </button>
+                </div>
+                {newsletterMsg && (
+                  <p
+                    className={`mt-2 text-sm ${
+                      newsletterStatus === "success"
+                        ? "text-green-600"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {newsletterMsg}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -323,10 +415,16 @@ const LandingPage = () => {
                 <a href="#" className="hover:underline opacity-90">
                   Rights Hub
                 </a>
-                <a href="#" className="hover:underline opacity-90">
+                <a
+                  onClick={() => handleNavigation("/home/chat")}
+                  className="hover:underline opacity-90 cursor-pointer"
+                >
                   AI Lawyer (Chat)
                 </a>
-                <a href="#" className="hover:underline opacity-90">
+                <a
+                  onClick={() => handleNavigation("/home/library")}
+                  className="hover:underline opacity-90 cursor-pointer"
+                >
                   Law Library
                 </a>
               </div>
