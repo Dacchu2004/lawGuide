@@ -167,7 +167,16 @@ async def process_query(payload: QueryRequest) -> QueryResponse:
         )
 
     # 🚫 Low confidence & invalid grounding
-    if not validation_result.is_valid and confidence < 0.4:
+    # Correction: If it's a "Game" or "Scenario", we might want to allow it even if grounding is low,
+    # because the user is providing the context in the prompt itself.
+    is_game_intent = "game" in payload.query_text.lower() or "scenario" in payload.query_text.lower()
+    is_procedural_intent = "how to" in payload.query_text.lower() or "procedure" in payload.query_text.lower()
+    is_rights_intent = "rights" in payload.query_text.lower() or "what are" in payload.query_text.lower()
+
+    # DEBUG LOGGING
+    print(f"DEBUG VALIDATION: Valid={validation_result.is_valid}, Conf={confidence}, Game={is_game_intent}, Proc={is_procedural_intent}, Rights={is_rights_intent}")
+
+    if not is_game_intent and not is_procedural_intent and not is_rights_intent and not validation_result.is_valid and confidence < 0.4:
         safe_en = (
             "I'm unable to provide a fully reliable legal interpretation based on the available information. "
             "Please consult a qualified legal expert."

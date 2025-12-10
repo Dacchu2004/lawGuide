@@ -8,7 +8,7 @@ import {
 } from "../api/chat";
 import type { ChatMessage, ChatSession } from "../api/chat";
 import { useAuth } from "../context/AuthContext";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -32,6 +32,8 @@ const ChatPage: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const navigate = useNavigate();
+  const processedRef = useRef(false); // Fix for strict mode double-firing
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Chat State
@@ -77,15 +79,26 @@ const ChatPage: React.FC = () => {
   // ✅ AUTO MESSAGE FROM HOME PAGE
   useEffect(() => {
     const autoQuery = (location.state as any)?.autoQuery;
-    if (autoQuery) {
+
+    if (autoQuery && !processedRef.current) {
+      processedRef.current = true; // Mark as processed immediately
       setQuery(autoQuery);
+
+      // Small timeout to ensure everything is mounted
       setTimeout(() => {
         handleSend(autoQuery);
+        // Clear the state so it doesn't fire again on refresh or back button
+        navigate(location.pathname, { replace: true, state: {} });
       }, 300);
     }
+
     // Automatically load sessions
+    if (processedRef.current === false) {
+      // Only load sessions if we didn't just run an auto-query (or maybe we should always load?)
+      // Actually, we should always load sessions.
+    }
     loadSessions();
-  }, []);
+  }, [location.state]); // Add location.state dependency to catch updates properly, but rely on Ref for single execution
 
   // UseEffect to scroll to bottom
   useEffect(() => {
@@ -232,7 +245,7 @@ const ChatPage: React.FC = () => {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 mt-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto px-4 mt-6 no-scrollbar">
           <div className="mb-6">
             <h3 className="text-xs font-medium text-[#171A1F] opacity-60 mb-3 px-2">
               Recent Consultations
@@ -296,7 +309,7 @@ const ChatPage: React.FC = () => {
           <div className="w-8" />
         </div>
 
-        <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 md:p-8 pb-32">
+        <div className="flex-1 overflow-y-auto w-full flex flex-col items-center justify-start p-2 md:p-4">
           {messages.length === 0 ? (
             <>
               <div className="text-center mb-6 md:mb-10 max-w-2xl">
@@ -406,21 +419,20 @@ const ChatPage: React.FC = () => {
         </div>
 
         {/* Input Area */}
-        <div className="absolute bottom-0 w-full bg-gradient-to-t from-white via-white to-white/0 pb-6 pt-10 px-4 md:px-0 flex flex-col items-center z-10">
+        <div className="w-full bg-white border-t border-gray-100 pb-6 pt-6 px-4 md:px-0 flex flex-col items-center z-10">
           <div className="w-full max-w-3xl relative shadow-[0_4px_20px_rgba(0,0,0,0.08)] rounded-xl">
-            <input
-              ref={inputRef}
-              type="text"
+            <textarea
+              ref={inputRef as any}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleSend();
                 }
               }}
               placeholder="Type your legal query (e.g., 'Is dowry illegal?')..."
-              className="w-full h-[56px] pl-6 pr-24 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#379AE6] focus:border-transparent text-lg placeholder:text-gray-400 bg-white"
+              className="w-full h-[56px] py-4 pl-6 pr-24 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#379AE6] focus:border-transparent text-lg placeholder:text-gray-400 bg-white resize-none no-scrollbar"
             />
 
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">

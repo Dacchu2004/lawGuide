@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Search, FileText, Check, Sparkles } from "lucide-react";
-import { searchLibrary, getActs } from "../api/library";
+import { searchLibrary } from "../api/library";
 import { getAISummary } from "../api/ai";
 import type { LibrarySection } from "../api/library";
 import { useAuth } from "../context/AuthContext";
@@ -40,12 +40,29 @@ const LibraryPage: React.FC = () => {
   const [loadingAI, setLoadingAI] = useState(false);
 
   useEffect(() => {
+    // Customize Acts Filter (Hardcoded as per user request)
+    const IMPORTANT_ACTS = [
+      "Bharatiya Nagarik Suraksha Sanhita 2023",
+      "Bharatiya Nyaya Sanhita 2023",
+      "Bharatiya Sakshya Adhinyam 2023",
+      "Constitution of India",
+      "Information Technology Act, 2000",
+    ];
+
+    setActs(IMPORTANT_ACTS);
+    const map: Record<string, boolean> = {};
+    IMPORTANT_ACTS.forEach((a) => (map[a] = false));
+    setFilters(map);
+
+    /* 
+    // OLD: Fetch from API
     getActs().then((data) => {
       setActs(data);
       const map: Record<string, boolean> = {};
       data.forEach((a) => (map[a] = false));
       setFilters(map);
     });
+    */
 
     // ✅ HANDLE NAVIGATION STATE
     const state = location.state as { query?: string; domain?: string } | null;
@@ -191,7 +208,7 @@ const LibraryPage: React.FC = () => {
       {/* 3-PANE LAYOUT */}
       <div className="flex-1 min-h-0 p-6 grid grid-cols-12 gap-6">
         {/* LEFT FILTERS */}
-        <aside className="col-span-3 bg-[#DAECFA]/40 rounded-xl border p-5 overflow-y-auto">
+        <aside className="col-span-3 bg-[#DAECFA]/40 rounded-xl border p-5 overflow-y-auto no-scrollbar">
           <h2 className="font-bold mb-4">Filters</h2>
 
           {acts.map((act) => (
@@ -258,7 +275,7 @@ const LibraryPage: React.FC = () => {
         </aside>
 
         {/* MIDDLE RESULTS (CRASH FIX ✅) */}
-        <section className="col-span-4 bg-white rounded-xl border overflow-y-auto">
+        <section className="col-span-4 bg-white rounded-xl border overflow-y-auto no-scrollbar">
           {results.map((result) => (
             <div
               key={result.id || `${result.act}-${result.section}`}
@@ -297,7 +314,7 @@ const LibraryPage: React.FC = () => {
         </section>
 
         {/* RIGHT DETAILS – UNCHANGED */}
-        <main className="col-span-5 bg-[#DAECFA]/30 rounded-xl border p-6 overflow-y-auto">
+        <main className="col-span-5 bg-[#DAECFA]/30 rounded-xl border p-6 overflow-y-auto no-scrollbar">
           {!selectedResult && <p>Select a result</p>}
 
           {selectedResult && (

@@ -8,6 +8,20 @@ from config import GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL_NAME
 from core.validation import ValidationResult
 
 
+
+SCRIPT_INSTRUCTIONS = {
+    "hi": "Hindi Language (using Devanagari script)",
+    "ta": "Tamil Language (using Tamil script)",
+    "te": "Telugu Language (using Telugu script)",
+    "kn": "Kannada Language (using Kannada script)",
+    "ml": "Malayalam Language (using Malayalam script)",
+    "bn": "Bengali Language (using Bengali script)",
+    "gu": "Gujarati Language (using Gujarati script)",
+    "mr": "Marathi Language (using Devanagari script)",
+    "pa": "Punjabi Language (using Gurmukhi script)",
+    "en": "English Language",
+}
+
 def _groq_chat(
     messages: List[Dict[str, str]],
     max_tokens: int = 800,
@@ -103,7 +117,8 @@ def chat_general(query: str) -> Optional[str]:
         {"role": "user", "content": query},
     ]
 
-    return _groq_chat(msgs, temperature=0.4, max_tokens=200)
+    # User requested huge limit ("infinity") -> using 4096 which is practical max
+    return _groq_chat(msgs, temperature=0.4, max_tokens=4096)
 
 
 def generate_answer(
@@ -158,12 +173,14 @@ def generate_answer(
 
 
 
+    lang_instruction = SCRIPT_INSTRUCTIONS.get(target_language.lower(), target_language.upper() + " LANGUAGE")
+
     user_prompt = (
         f"User state: {state}\n"
         f"User query: {query}\n\n"
         f"Relevant legal sections:\n{context_text}\n\n"
         f"{style_instruction}\n"
-        f"RESPOND STRICTLY IN {target_language.upper()} LANGUAGE."
+        f"RESPOND STRICTLY IN {lang_instruction}. Do not use transliteration (e.g. Hinglish/Tanglish)."
     )
 
     messages = [
@@ -171,7 +188,8 @@ def generate_answer(
         {"role": "user", "content": user_prompt},
     ]
 
-    return _groq_chat(messages)
+    # User requested huge limit ("infinity") -> using 4096 which is practical max
+    return _groq_chat(messages, max_tokens=4096)
 
 
 def validate_answer(
@@ -206,9 +224,9 @@ def validate_answer(
     "2) The AI's answer.\n"
     "3) The retrieved legal sections.\n\n"
     "Your responsibilities:\n"
-    "A) Check if the AI's answer is STRICTLY based on the provided sections.\n"
-    "   - If the answer references penalties, procedures, or legal details NOT in the sections, "
-    "     mark is_valid = false (but this does NOT automatically make it high risk).\n"
+    "A) Check if the AI's answer is Reasonably supported by the provided sections and general legal context.\n"
+    "   - You should ALLOW general procedural advice (e.g. 'visit police station', 'file written complaint') even if not explicitly in the retrieved text.\n"
+    "   - Only mark is_valid = false if the answer cites specific WRONG sections/penalties or makes up laws not in the text.\n"
     "B) Check if the AI's answer is dangerously misleading.\n"
     "C) Determine if the query is HIGH-RISK, which ONLY applies when:\n"
     "   - The user asks how to commit a serious crime (e.g., murder, assault) or intentionally avoid legal punishment, OR\n"
