@@ -107,7 +107,7 @@ export const askChatbot = async (req: Request, res: Response) => {
     // 5️⃣ Update Query row with AI status/confidence/response
     // 5️⃣ Update Query row logic handled below
 
-    const aiAnswer = aiData.answer_english || aiData.answer_primary || "I currently have no response.";
+    const aiAnswer = aiData.answer_primary || aiData.answer_english || "I currently have no response.";
 
     // Save AI Response
     await prisma.chatMessage.create({

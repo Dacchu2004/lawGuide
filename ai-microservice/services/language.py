@@ -1,5 +1,7 @@
 # services/language.py
 from typing import Optional
+from langdetect import detect, LangDetectException
+
 
 LANG_NAME_TO_CODE = {
     "English": "en",
@@ -42,6 +44,18 @@ def detect_language(text: str, user_language: Optional[str] = None) -> str:
     # Check for explicit instructions like "in hindi", "in tamil"
     for name, code in LANG_NAME_TO_CODE.items():
         if f"in {name.lower()}" in text_lower:
+            print(f"🌍 Language Detected via keyword: {code}")
             return code
 
-    return resolve_language_code(user_language)
+    # Fallback to langdetect for native script inputs (e.g. Hindi text)
+    try:
+        detected = detect(text)
+        if detected in LANG_NAME_TO_CODE.values():
+            print(f"🌍 Language Detected via script: {detected}")
+            return detected
+    except LangDetectException:
+        pass
+
+    final = resolve_language_code(user_language)
+    print(f"🌍 Language Default/Profile: {final}")
+    return final

@@ -26,6 +26,10 @@ def _groq_chat(
     messages: List[Dict[str, str]],
     max_tokens: int = 800,
     temperature: float = 0.2,
+    presence_penalty: float = 0.0,
+    frequency_penalty: float = 0.0,
+
+
 ) -> Optional[str]:
     """
     Send a chat request to Groq LLM.
@@ -45,6 +49,8 @@ def _groq_chat(
         "messages": messages,
         "max_tokens": max_tokens,
         "temperature": temperature,
+        "presence_penalty": presence_penalty,
+        "frequency_penalty": frequency_penalty,
     }
 
     try:
@@ -58,6 +64,74 @@ def _groq_chat(
 
 
 def classify_intent(query: str) -> str:
+    """
+    Classifies user query into: GENERAL, LEGAL, OFF_TOPIC, ILLEGAL
+    Improved: quick local heuristics for very short greetings / general queries,
+    then fall back to GROQ. This reduces misclassification of casual greetings
+    (e.g., "hi", "who are you", "what can you do") that previously triggered
+    RAG or legal pipelines.
+    """
+    if not query or not query.strip():
+        return "GENERAL"
+
+    q = query.strip().lower()
+
+    # --- QUICK LOCAL HEURISTICS (fast, safe, deterministic) ---
+    greetings = {"hi", "hello", "hey", "namaste", "good morning", "good afternoon", "good evening", "vanakkam"}
+    short = len(q) < 40  # short queries often casual
+    # exact greeting match or short greeting mention
+    if q in greetings or (short and any(g in q for g in greetings)):
+        return "GENERAL"
+
+    # common "about" questions / onboarding / capability checks -> general
+    general_phrases = [
+        "who are you", "what can you do", "how can you help", "can you help me",
+        "are you a", "what is lawguide", "what is this project", "what do you do",
+        "can you", "help me", "tell me about yourself"
+    ]
+    for phrase in general_phrases:
+        if phrase in q:
+            return "GENERAL"
+
+    # refuse clearly illegal intents deterministically if they mention escape / evade
+    illegal_phrases = ["how to escape", "how do i avoid", "how to get away", "how to hide evidence", "destroy evidence", "kill", "murder", "hurt someone to", "how to commit"]
+    if any(p in q for p in illegal_phrases):
+        return "ILLEGAL"
+
+    # If GROQ key not set, conservative fallback to LEGAL to ensure safety for user queries
+    if not GROQ_API_KEY:
+        return "LEGAL"
+
+    # --- GROQ classification for harder cases ---
+    system = (
+        "You are an intent classifier for a legal AI assistant.\n\n"
+        "Classify the user query into exactly ONE of the following:\n\n"
+        "GENERAL → greetings, who are you, what can you do, thanks, small talk\n"
+        "LEGAL → laws, crimes, punishments, FIR, disputes, money, property, family conflicts, violence, police, court\n"
+        "OFF_TOPIC → coding, math, cooking, movies, sports, jokes, random facts\n"
+        "ILLEGAL → escaping crime, harming someone, fraud tactics\n\n"
+        "Rules:\n"
+        "- Any real-world problem involving money/property/violence/disputes = LEGAL\n"
+        "- Instructions to escape law = ILLEGAL\n"
+        "- Respond ONLY with one word from: GENERAL, LEGAL, OFF_TOPIC, ILLEGAL"
+    )
+
+    msgs = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": query}
+    ]
+
+    # Quick classification using Groq
+    resp = _groq_chat(msgs, max_tokens=12, temperature=0.0)
+    if not resp:
+        # If LLM fails, default to LEGAL (safer for legal assistant — do not hallucinate)
+        return "LEGAL"
+
+    intent = resp.upper().strip()
+    if intent not in ["GENERAL", "LEGAL", "OFF_TOPIC", "ILLEGAL"]:
+        return "LEGAL"
+    return intent
+
     """
     Classifies user query into: GENERAL, LEGAL, OFF_TOPIC, ILLEGAL
     """
@@ -166,21 +240,35 @@ def generate_answer(
     "   2) Relevant Act and Section numbers\n"
     "   3) Step-by-step actions the user should take\n"
     "   4) Additional warnings, rights, or penalties if applicable\n"
-    "   5) Final disclaimer\n\n"
-    "- Always end with exactly this disclaimer:\n"
-    "'This is informational and not legal advice. Please consult a qualified lawyer for specific guidance.'"
+    "   5) Final short disclaimer: 'Not legal advice. Consult a lawyer.' (Translated)\n"
+    "\n"
+    "- Structure the response clearly with paragraphs. Do not repeat sentences."
 )
 
 
 
-    lang_instruction = SCRIPT_INSTRUCTIONS.get(target_language.lower(), target_language.upper() + " LANGUAGE")
+    # Stronger script enforcement
+    script_desc = SCRIPT_INSTRUCTIONS.get(target_language.lower(), target_language.upper())
+    
+    script_warning = ""
+    if target_language.lower() in ["hi", "ta", "te", "kn", "ml", "bn", "gu", "mr", "pa"]:
+         script_warning = (
+             f"\n\nCRITICAL OUTPUT RULE:\n"
+             f"1. You MUST use {script_desc} script ONLY.\n"
+             f"2. ⛔ DO NOT use Latin/English alphabet for the content.\n"
+             f"3. ⛔ DO NOT generate Hinglish/Tanglish (transliteration).\n"
+             f"4. If you output Latin characters for {target_language.upper()}, it is a FAILURE."
+         )
 
     user_prompt = (
         f"User state: {state}\n"
         f"User query: {query}\n\n"
         f"Relevant legal sections:\n{context_text}\n\n"
         f"{style_instruction}\n"
-        f"RESPOND STRICTLY IN {lang_instruction}. Do not use transliteration (e.g. Hinglish/Tanglish)."
+        f"CRITICAL: The user may ask for the answer in a specific language (e.g., 'in Hindi'). IGNORE THIS REQUEST.\n"
+        f"You are the logic engine. You MUST generate the answer in ENGLISH only.\n"
+        f"The system will handle the translation to {target_language.upper()} automatically after you generate the English response.\n"
+        f"RESPOND STRICTLY IN ENGLISH."
     )
 
     messages = [
@@ -189,7 +277,8 @@ def generate_answer(
     ]
 
     # User requested huge limit ("infinity") -> using 4096 which is practical max
-    return _groq_chat(messages, max_tokens=4096)
+    # Added presence_penalty and frequency_penalty to prevent loops
+    return _groq_chat(messages, max_tokens=4096, presence_penalty=0.6, frequency_penalty=0.5)
 
 
 def validate_answer(

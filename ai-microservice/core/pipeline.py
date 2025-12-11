@@ -18,58 +18,69 @@ async def process_query(payload: QueryRequest) -> QueryResponse:
     intent = classify_intent(payload.query_text)
     print(f"🧠 Detected Intent: {intent}")
 
+    # Determine desired language early (so GENERAL replies can be localized)
+    detected_lang = detect_language(payload.query_text, payload.user_language)
+
     if intent == "GENERAL":
-        reply = chat_general(payload.query_text) or "Hello! I am LawGuide AI."
+        reply_en = chat_general(payload.query_text) or "Hello! I am LawGuide AI."
+        # translate back to user's desired language if not English
+        if detected_lang != "en":
+            reply_local = translate_from_english(reply_en, detected_lang)
+        else:
+            reply_local = reply_en
+
         return QueryResponse(
             status="answer",
-            answer_primary=reply,
-            answer_english=reply,
+            answer_primary=reply_local,
+            answer_english=reply_en,
             confidence=1.0,
-            detected_language="en",
+            detected_language=detected_lang,
             retrieved_sections=[],
             error_type=None,
             high_risk=False
         )
 
     if intent == "OFF_TOPIC":
-        msg = "I am a legal assistant and can only help with Indian laws, rights, and legal procedures."
+        msg_en = "I am a legal assistant and can only help with Indian laws, rights, and legal procedures."
+        msg_local = translate_from_english(msg_en, detected_lang) if detected_lang != "en" else msg_en
         return QueryResponse(
             status="refusal",
-            answer_primary=msg,
-            answer_english=msg,
+            answer_primary=msg_local,
+            answer_english=msg_en,
             confidence=1.0,
-            detected_language="en",
+            detected_language=detected_lang,
             retrieved_sections=[],
             error_type="off_topic",
             high_risk=False
         )
 
     if intent == "ILLEGAL":
-        msg = "I cannot help with illegal activities. If you need legal consequences or support for a lawful situation, I can assist."
+        msg_en = "I cannot help with illegal activities. If you need legal consequences or support for a lawful situation, I can assist."
+        msg_local = translate_from_english(msg_en, detected_lang) if detected_lang != "en" else msg_en
         return QueryResponse(
             status="refusal",
-            answer_primary=msg,
-            answer_english=msg,
+            answer_primary=msg_local,
+            answer_english=msg_en,
             confidence=1.0,
-            detected_language="en",
+            detected_language=detected_lang,
             retrieved_sections=[],
             error_type="illegal_refusal",
             high_risk=True
         )
 
     # If intent is LEGAL (or fallback), proceed to RAG pipeline...
-    detected_lang = detect_language(payload.query_text, payload.user_language)
-
+    # detected_lang already set above; keep using it
     normalized_query = translate_to_english(payload.query_text.strip(), detected_lang)
     if not normalized_query:
-        safe_msg = (
+        safe_msg_en = (
             "I'm unable to process your question due to language handling issues. "
             "Please try again in simple English or consult a legal expert."
         )
+        safe_local = translate_from_english(safe_msg_en, detected_lang)
         return QueryResponse(
             status="refusal",
-            answer_primary=safe_msg,
-            answer_english=safe_msg,
+            answer_primary=safe_local,
+            answer_english=safe_msg_en,
             confidence=0.0,
             detected_language=detected_lang,
             retrieved_sections=[],
@@ -82,14 +93,15 @@ async def process_query(payload: QueryRequest) -> QueryResponse:
     # Retrieve related legal sections
     retrieved = retrieve_sections(normalized_query, user_state)
     if not retrieved:
-        safe_msg = (
+        safe_msg_en = (
             "I couldn't find relevant legal sections in the current dataset for your question. "
             "Please consult a qualified legal expert or legal aid service."
         )
+        safe_local = translate_from_english(safe_msg_en, detected_lang)
         return QueryResponse(
             status="refusal",
-            answer_primary=safe_msg,
-            answer_english=safe_msg,
+            answer_primary=safe_local,
+            answer_english=safe_msg_en,
             confidence=0.0,
             detected_language=detected_lang,
             retrieved_sections=[],
@@ -100,13 +112,13 @@ async def process_query(payload: QueryRequest) -> QueryResponse:
     # Rank sections using cross encoder
     reranked = rerank_sections(normalized_query, retrieved)
 
-    # Generate primary answer
+    # Generate primary answer (always in English for grounding/stability)
     draft_answer_en = generate_answer(
         query=normalized_query,
         sections=reranked[:5],  # Limit to top 5 to prevent 413 Payload Too Large
         explanation_mode=payload.explanation_mode,
         state=user_state,
-        target_language=detected_lang,
+        target_language="en", # Always generate in English first for stability
     )
 
     if not draft_answer_en:
@@ -172,11 +184,12 @@ async def process_query(payload: QueryRequest) -> QueryResponse:
     is_game_intent = "game" in payload.query_text.lower() or "scenario" in payload.query_text.lower()
     is_procedural_intent = "how to" in payload.query_text.lower() or "procedure" in payload.query_text.lower()
     is_rights_intent = "rights" in payload.query_text.lower() or "what are" in payload.query_text.lower()
+    is_legality_intent = "can a" in payload.query_text.lower() or "can i" in payload.query_text.lower() or "is it" in payload.query_text.lower()
 
     # DEBUG LOGGING
-    print(f"DEBUG VALIDATION: Valid={validation_result.is_valid}, Conf={confidence}, Game={is_game_intent}, Proc={is_procedural_intent}, Rights={is_rights_intent}")
+    print(f"DEBUG VALIDATION: Valid={validation_result.is_valid}, Conf={confidence}, Game={is_game_intent}, Proc={is_procedural_intent}, Rights={is_rights_intent}, Legal={is_legality_intent}")
 
-    if not is_game_intent and not is_procedural_intent and not is_rights_intent and not validation_result.is_valid and confidence < 0.4:
+    if not is_game_intent and not is_procedural_intent and not is_rights_intent and not is_legality_intent and not validation_result.is_valid and confidence < 0.4:
         safe_en = (
             "I'm unable to provide a fully reliable legal interpretation based on the available information. "
             "Please consult a qualified legal expert."

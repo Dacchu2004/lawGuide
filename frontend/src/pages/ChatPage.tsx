@@ -178,7 +178,7 @@ const ChatPage: React.FC = () => {
       }
 
       const replyText =
-        res.answer_english || res.answer_primary || "No answer received.";
+        res.answer_primary || res.answer_english || "No answer received.";
 
       const aiMsg: ChatMessage = {
         role: "assistant",
