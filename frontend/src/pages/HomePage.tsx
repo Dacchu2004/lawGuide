@@ -111,389 +111,341 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-[calc(100vh-80px)] w-full font-sans text-[#171A1F] flex flex-col">
       {/* HERO SECTION */}
-      <section className="relative w-full h-[600px] flex items-center justify-center bg-blue-600 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2600&auto=format&fit=crop"
-            alt="Courtroom"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#258CF4]/90 via-[#258CF4]/50 to-[#197DCA]/40 mix-blend-multiply" />
-        </div>
+      <section className="relative w-full h-[520px] flex items-center justify-center overflow-hidden">
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center text-white flex flex-col items-center">
-          <h1 className="font-archivo font-extrabold text-4xl md:text-5xl lg:text-6xl leading-tight mb-4">
-            Navigating India's Legal
-            <br />
-            Landscape with Ease.
-          </h1>
-          <p className="font-open-sans text-lg md:text-xl text-white/90 font-normal mb-10 max-w-2xl">
-            Your AI-powered companion for the new Bharatiya Nyaya Sanhita (BNS)
-            and knowing your rights.
-          </p>
+  {/* Background */}
+  <img
+    src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2600"
+    className="absolute inset-0 w-full h-full object-cover"
+    alt="Courtroom"
+  />
 
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <button
-              onClick={() => navigate("/home/library")}
-              className="bg-[#258CF4] hover:bg-[#1a75d2] text-white px-8 py-3 rounded-xl font-medium text-lg shadow-lg transition flex items-center justify-center gap-2"
-            >
-              <BookOpen size={20} />
-              Search Library
-            </button>
-            <button
-              onClick={() => navigate("/home/chat")}
-              className="bg-white hover:bg-gray-100 text-[#323743] px-8 py-3 rounded-xl font-medium text-lg border-2 border-white transition flex items-center justify-center gap-2"
-            >
-              <MessageCircle size={20} />
-              Chat with AI
-            </button>
-          </div>
-        </div>
-      </section>
+  {/* Blue overlay (Visily style) */}
+  <div className="absolute inset-0 bg-[#197DCA]/60" />
+
+  {/* CONTENT */}
+  <div className="relative z-10 max-w-[1200px] mx-auto px-6 text-center text-white">
+
+    <h1 className="font-archivo font-bold text-4xl md:text-5xl leading-[1.2] mb-4">
+      Navigating India's Legal <br /> Landscape with Ease.
+    </h1>
+
+    <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-8">
+      Your AI-powered companion for the new Bharatiya Nyaya Sanhita (BNS)
+      and knowing your rights.
+    </p>
+
+    <div className="flex flex-col sm:flex-row justify-center gap-4">
+      <button
+        onClick={() => navigate("/home/library")}
+        className="bg-white/20 backdrop-blur-sm hover:bg-white/30 px-8 py-3 rounded-xl text-white text-lg border border-white/20"
+      >
+        Search Library
+      </button>
+
+      <button
+        onClick={() => navigate("/home/chat")}
+        className="bg-white hover:bg-gray-100 text-[#323743] px-8 py-3 rounded-xl text-lg shadow-md"
+      >
+        Chat with AI
+      </button>
+    </div>
+
+  </div>
+</section>
 
       {/* EXPLORE LAWS SEARCH */}
-      <section className="bg-white py-16 px-4 w-full relative">
-        <div className="max-w-[1440px] mx-auto flex flex-col items-center">
-          <h2 className="font-archivo font-bold text-3xl md:text-4xl text-[#171A1F] mb-10 text-center">
-            Explore Laws
-          </h2>
-          <div className="relative w-full max-w-3xl mb-12">
-            <input
-              type="text"
-              placeholder="Search by keyword, case, or section..."
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  navigate("/home/library", {
-                    state: { query: (e.target as HTMLInputElement).value },
-                  });
-                }
-              }}
-              className="w-full h-[60px] pl-12 pr-6 rounded-xl border-2 border-[#DEE1E6] text-[#323743] focus:border-[#258CF4] focus:outline-none text-lg shadow-sm transition"
-            />
-            <Search
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#323743]"
-              size={20}
-            />
-          </div>
-          <div className="flex flex-wrap justify-center gap-4 w-full max-w-5xl">
-            {[
-              "Criminal",
-              "Property",
-              "Family",
-              "Corporate",
-              "Cyber",
-              "Constitutional",
-              "Consumer",
-              "Labour",
-            ].map((tag, index) => (
-              <button
-                key={index}
-                onClick={() =>
-                  navigate("/home/library", { state: { domain: tag } })
-                }
-                className="bg-[#379AE6] hover:bg-[#197DCA] text-white px-6 py-2.5 rounded-full font-open-sans font-semibold text-sm md:text-base transition shadow-sm"
-              >
-                {tag} Law
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+      <section className="bg-white py-14 px-6">
+  <div className="max-w-[1200px] mx-auto text-center">
+
+    <h2 className="font-archivo font-bold text-3xl mb-10 text-[#171A1F]">
+      Explore Laws
+    </h2>
+
+    {/* Search Bar */}
+    <div className="relative max-w-2xl mx-auto mb-10">
+      <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#565D6D]" />
+      <input
+        type="text"
+        placeholder="Search by keyword, case, or section..."
+        className="w-full h-[54px] pl-12 pr-5 rounded-xl border border-[#DEE1E6] shadow-sm text-lg focus:border-[#258CF4] outline-none"
+      />
+    </div>
+
+    {/* Tags */}
+    <div className="flex flex-wrap justify-center gap-3">
+      {["Criminal", "Property", "Corporate", "Cyber", "Consumer", "Constitutional", "Labour"].map((t) => (
+        <button
+          key={t}
+          className="px-5 py-2 rounded-full bg-[#379AE6] hover:bg-[#197DCA] text-white text-sm md:text-base font-semibold"
+        >
+          {t} Law
+        </button>
+      ))}
+    </div>
+
+  </div>
+</section>
+
 
       {/* KEY LEGAL DOMAINS */}
-      <section className="bg-[#197DCA] py-20 px-4 w-full">
-        <div className="max-w-[1440px] mx-auto">
-          <div className="flex items-center justify-center gap-4 mb-14">
-            <h2 className="font-archivo font-bold text-3xl md:text-[40px] leading-tight text-white text-center">
-              Discover Key Legal Domains
-            </h2>
-            <div className="hidden sm:block text-white transform -rotate-12">
-              <Gavel size={48} fill="currentColor" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {legalDomains.map((domain, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-xl border border-[#DEE1E6] shadow-sm p-6 flex flex-col h-full hover:shadow-lg transition-shadow duration-300"
-              >
-                <div className="w-full h-[64px] bg-[#258CF41A] rounded-[10px] flex items-center justify-center mb-6">
-                  <div className="text-[#258CF4]">{domain.icon}</div>
-                </div>
-                <h3 className="font-archivo font-semibold text-[20px] leading-[28px] text-[#171A1F] mb-3">
-                  {domain.title}
-                </h3>
-                <p className="font-open-sans text-[14px] leading-[23px] text-[#323743] font-normal mb-8 flex-grow">
-                  {domain.description}
-                </p>
-                <button
-                  className="text-[#258CF4] font-medium text-[14px] leading-[22px] hover:underline text-left mt-auto self-start"
-                  onClick={() =>
-                    navigate("/home/library", {
-                      state: { domain: domain.title.split(" ")[0] },
-                    })
-                  }
-                >
-                  Explore
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <section className="bg-[#D7ECFF] py-12 px-4 w-full">
+  <div className="max-w-[1280px] mx-auto">
+    
+    {/* Title */}
+    <div className="flex items-center justify-center gap-3 mb-10">
+      <h2 className="font-archivo font-bold text-[36px] leading-tight text-[#171A1F] text-center">
+        Discover Key Legal Domains
+      </h2>
+      <div className="hidden sm:block text-[#171A1F]">
+        <Gavel size={36} className="-rotate-12" />
+      </div>
+    </div>
 
-      {/* ESSENTIAL RESOURCES */}
-      <section className="bg-white py-20 px-4 w-full relative overflow-hidden">
-        <div className="max-w-[1440px] mx-auto relative">
-          <div className="flex justify-center items-center mb-16 relative">
-            <h2 className="font-archivo font-bold text-3xl md:text-[40px] leading-tight text-[#171A1F] text-center max-w-4xl z-10">
-              Essential Legal Guides &amp; Resources
-            </h2>
-            <div className="hidden lg:block absolute top-[-10px] right-[10%] xl:right-[20%] transform rotate-[13.15deg] opacity-20">
-              <BookOpen size={80} className="text-[#171A1F]" />
-            </div>
+    {/* Cards Grid */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      {legalDomains.map((domain, index) => (
+        <div
+          key={index}
+          className="bg-white rounded-[14px] border border-[#E4E8EE] shadow-sm p-6 flex flex-col hover:shadow-md transition-shadow duration-300"
+        >
+          {/* Icon Background */}
+          <div className="w-full h-[56px] bg-[#E9F3FF] rounded-[12px] flex items-center justify-center mb-6">
+            <div className="text-[#258CF4]">{domain.icon}</div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-0 lg:px-12">
-            {quickGuides.map((guide, index) => (
-              <div
-                key={index}
-                onClick={() =>
-                  navigate("/home/chat", { state: { autoQuery: guide.title } })
-                }
-                className="bg-[#379AE6] rounded-xl border border-[#DEE1E6]/20 p-6 md:p-8 text-white relative shadow-sm hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer"
-              >
-                <div className="flex justify-between items-start mb-4 pr-6">
-                  <h3 className="font-open-sans font-semibold text-[18px] leading-[28px]">
-                    {guide.title}
-                  </h3>
-                  <div className="absolute top-7 right-7">
-                    <Bookmark size={20} fill="currentColor" />
-                  </div>
-                </div>
-                <p className="font-open-sans text-[14px] leading-[20px] font-normal opacity-95">
-                  {guide.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* IMPORTANT RIGHTS */}
-      <section className="bg-[#197DCA] py-24 px-4 w-full relative overflow-hidden">
-        <div className="hidden xl:block absolute bottom-0 right-0 z-0 opacity-100">
-          <img
-            src="https://cdni.iconscout.com/illustration/premium/thumb/law-book-illustration-download-in-svg-png-gif-file-formats--justice-legal-education-hammer-scale-study-school-pack-interiors-illustrations-5386047.png"
-            alt="Rights Illustration"
-            className="w-[300px] h-auto object-contain drop-shadow-lg"
-          />
-        </div>
-        <div className="max-w-[1440px] mx-auto relative z-10 flex flex-col items-center">
-          <h2 className="font-archivo font-bold text-3xl md:text-[40px] leading-tight text-white text-center mb-12">
-            Important rights to know
-          </h2>
-          <div className="flex flex-wrap justify-center gap-x-4 gap-y-4 max-w-5xl mb-12">
-            {importantRights.map((right, index) => (
-              <button
-                key={index}
-                className="bg-white text-[#171A1F] hover:bg-[#DEE1E6] active:bg-[#BDC1CA] px-6 py-3 rounded-full font-open-sans font-semibold text-sm md:text-base transition-colors shadow-sm"
-              >
-                {right}
-              </button>
-            ))}
-          </div>
-          <button className="bg-white text-[#379AE6] hover:text-[#197DCA] font-open-sans font-medium text-lg px-8 py-3 rounded-xl shadow-lg transition-colors flex items-center justify-center">
-            Learn More About Your Rights
+          {/* Title */}
+          <h3 className="font-archivo font-semibold text-[18px] leading-[26px] text-[#171A1F] mb-3">
+            {domain.title}
+          </h3>
+
+          {/* Description */}
+          <p className="font-open-sans text-[14px] leading-[22px] text-[#323743] mb-6 flex-grow">
+            {domain.description}
+          </p>
+
+          {/* Explore Button */}
+          <button
+            className="text-[#258CF4] font-semibold text-[14px] hover:underline mt-auto text-left"
+            onClick={() =>
+              navigate("/home/library", {
+                state: { domain: domain.title.split(" ")[0] },
+              })
+            }
+          >
+            Explore
           </button>
         </div>
-      </section>
+      ))}
+    </div>
+
+  </div>
+</section>
+
+
+      {/* ESSENTIAL RESOURCES */}
+      <section className="bg-white py-14 px-4 w-full relative overflow-hidden">
+  <div className="max-w-[1280px] mx-auto relative">
+
+    {/* Heading */}
+    <div className="flex justify-center items-center mb-12 relative">
+      <h2 className="font-archivo font-bold text-[34px] leading-tight text-[#171A1F] text-center z-10">
+        Essential Legal Guides & Resources
+      </h2>
+
+      {/* Light Transparent Icon */}
+      <div className="hidden lg:block absolute top-[-8px] right-[14%] opacity-20 rotate-[12deg]">
+        <BookOpen size={66} className="text-[#171A1F]" />
+      </div>
+    </div>
+
+    {/* Cards */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 lg:px-6">
+      {quickGuides.map((guide, index) => (
+        <div
+          key={index}
+          onClick={() =>
+            navigate("/home/chat", { state: { autoQuery: guide.title } })
+          }
+          className="bg-[#379AE6] rounded-[14px] p-6 text-white shadow-sm border border-[#DEE1E6]/10 
+                     hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer relative"
+        >
+          {/* Title + Bookmark */}
+          <div className="flex items-start justify-between mb-3">
+            <h3 className="font-open-sans font-semibold text-[17px] leading-[26px]">
+              {guide.title}
+            </h3>
+
+            <Bookmark
+              size={18}
+              className="opacity-80 absolute top-6 right-6"
+              fill="currentColor"
+            />
+          </div>
+
+          {/* Description */}
+          <p className="font-open-sans text-[14px] leading-[20px] opacity-95">
+            {guide.description}
+          </p>
+        </div>
+      ))}
+    </div>
+
+  </div>
+</section>
+
+
+      {/* IMPORTANT RIGHTS */}
+      <section className="bg-[#E6F3FF] py-20 px-4 w-full relative overflow-hidden">
+  {/* Right Illustration */}
+  <div className="hidden xl:block absolute bottom-0 right-0 z-0 opacity-70">
+    <img
+      src="https://cdni.iconscout.com/illustration/premium/thumb/law-book-illustration-download-in-svg-png-gif-file-formats--justice-legal-education-hammer-scale-study-school-pack-interiors-illustrations-5386047.png"
+      alt="Rights Illustration"
+      className="w-[260px] h-auto object-contain"
+    />
+  </div>
+
+  {/* Content */}
+  <div className="max-w-[1100px] mx-auto relative z-10 flex flex-col items-center">
+
+    {/* Title */}
+    <h2 className="font-archivo font-bold text-[36px] md:text-[42px] leading-tight text-[#171A1F] text-center mb-10">
+      Important rights to know
+    </h2>
+
+    {/* Rights Buttons */}
+    <div className="flex flex-wrap justify-center gap-x-4 gap-y-4 max-w-4xl mb-10">
+      {importantRights.map((right, index) => (
+        <button
+          key={index}
+          className="bg-white text-[#171A1F] hover:bg-[#F2F4F7] px-6 py-2.5 
+          rounded-full font-open-sans font-medium text-[15px] shadow-sm transition"
+        >
+          {right}
+        </button>
+      ))}
+    </div>
+
+    {/* Learn More Button */}
+    <button className="bg-white text-[#258CF4] hover:text-[#197DCA] px-8 py-3 
+      rounded-xl font-open-sans text-[17px] shadow-md transition">
+      Learn More About Your Rights
+    </button>
+  </div>
+</section>
+
 
       {/* FOOTER */}
-      <footer className="bg-white w-full py-16 border-t border-[#DEE1E6]">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-6 mb-12">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 text-[#197DCA]">
-                  <Scale size={40} fill="#197DCA" className="text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-archivo font-bold text-2xl text-[#197DCA] leading-none">
-                    LawGuide India
-                  </span>
-                </div>
-              </div>
-              <p className="font-open-sans text-[#323743] text-sm leading-6 max-w-xs mt-2">
-                Your comprehensive guide to India's legal system. Empowering you
-                with knowledge and clarity.
-              </p>
-            </div>
+      <footer className="bg-white w-full py-10 border-t border-[#DEE1E6]">
+  <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
 
-            <div className="flex flex-col gap-4">
-              <h3 className="font-archivo font-bold text-lg text-[#171A1F]">
-                Legal Resources
-              </h3>
-              <div className="flex flex-col gap-3">
-                <a
-                  href="#"
-                  className="font-open-sans text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  Bare Acts
-                </a>
-                <a
-                  href="#"
-                  className="font-open-sans text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  Case Laws
-                </a>
-                <a
-                  href="#"
-                  className="font-open-sans text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  Legal Forms
-                </a>
-                <a
-                  href="#"
-                  className="font-open-sans text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  Legal News
-                </a>
-              </div>
-            </div>
+    {/* TOP GRID */}
+    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-10 mb-10">
 
-            <div className="flex flex-col gap-4">
-              <h3 className="font-archivo font-bold text-lg text-[#171A1F]">
-                Services
-              </h3>
-              <div className="flex flex-col gap-3">
-                <a
-                  href="#"
-                  className="font-open-sans text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  Find a Lawyer
-                </a>
-                <a
-                  href="#"
-                  className="font-open-sans text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  Online Consultation
-                </a>
-                <a
-                  href="#"
-                  className="font-open-sans text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  Document Review
-                </a>
-                <a
-                  href="#"
-                  className="font-open-sans text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  Legal Aid
-                </a>
-              </div>
-            </div>
+      {/* LOGO + DESCRIPTION */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <img
+            src="/assets/logo_blue.png"
+            className="h-14 w-auto"
+            alt="LawGuide India"
+          />
+        </div>
 
-            <div className="flex flex-col gap-4">
-              <h3 className="font-archivo font-bold text-lg text-[#171A1F]">
-                About Us
-              </h3>
-              <div className="flex flex-col gap-3">
-                <a
-                  href="#"
-                  className="font-open-sans text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  Our Mission
-                </a>
-                <a
-                  href="#"
-                  className="font-open-sans text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  Team
-                </a>
-                <a
-                  href="#"
-                  className="font-open-sans text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  Careers
-                </a>
-                <a
-                  href="#"
-                  className="font-open-sans text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  Contact
-                </a>
-              </div>
-            </div>
+        <p className="font-open-sans text-[#323743] text-[14px] leading-6 max-w-xs">
+          Your comprehensive guide to India's legal system.
+          Empowering you with knowledge and clarity.
+        </p>
+      </div>
 
-            <div className="flex flex-col gap-6">
-              <h3 className="font-archivo font-bold text-lg text-[#171A1F]">
-                Contact Us
-              </h3>
+      {/* LEGAL RESOURCES */}
+      <div className="flex flex-col gap-3">
+        <h3 className="font-archivo font-semibold text-[18px] text-[#171A1F]">
+          Legal Resources
+        </h3>
 
-              <div className="flex flex-col gap-4">
-                <div className="flex items-start gap-3">
-                  <MapPin
-                    className="text-[#323743] mt-0.5 shrink-0"
-                    size={18}
-                  />
-                  <span className="font-open-sans text-sm text-[#323743] leading-tight">
-                    123 Legal Avenue,
-                    <br />
-                    Mumbai, India
-                  </span>
-                </div>
+        <div className="flex flex-col gap-2 text-[14px]">
+          <a className="text-[#323743] hover:text-[#197DCA]">Bare Acts</a>
+          <a className="text-[#323743] hover:text-[#197DCA]">Case Laws</a>
+          <a className="text-[#323743] hover:text-[#197DCA]">Legal Forms</a>
+          <a className="text-[#323743] hover:text-[#197DCA]">Legal News</a>
+        </div>
+      </div>
 
-                <div className="flex items-center gap-3">
-                  <Phone className="text-[#323743] shrink-0" size={18} />
-                  <span className="font-open-sans text-sm text-[#323743]">
-                    +91 1800 123 4567
-                  </span>
-                </div>
+      {/* SERVICES */}
+      <div className="flex flex-col gap-3">
+        <h3 className="font-archivo font-semibold text-[18px] text-[#171A1F]">
+          Services
+        </h3>
 
-                <div className="flex items-center gap-3">
-                  <Mail className="text-[#323743] shrink-0" size={18} />
-                  <span className="font-open-sans text-sm text-[#323743]">
-                    info@lawguideindia.com
-                  </span>
-                </div>
-              </div>
+        <div className="flex flex-col gap-2 text-[14px]">
+          <a className="text-[#323743] hover:text-[#197DCA]">Find a Lawyer</a>
+          <a className="text-[#323743] hover:text-[#197DCA]">Online Consultation</a>
+          <a className="text-[#323743] hover:text-[#197DCA]">Document Review</a>
+          <a className="text-[#323743] hover:text-[#197DCA]">Legal Aid</a>
+        </div>
+      </div>
 
-              <div className="flex gap-4 mt-2">
-                <a
-                  href="#"
-                  className="text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  <Facebook size={20} />
-                </a>
-                <a
-                  href="#"
-                  className="text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  <Twitter size={20} />
-                </a>
-                <a
-                  href="#"
-                  className="text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  <Linkedin size={20} />
-                </a>
-                <a
-                  href="#"
-                  className="text-[#323743] hover:text-[#197DCA] transition-colors"
-                >
-                  <Youtube size={20} />
-                </a>
-              </div>
-            </div>
-          </div>
+      {/* ABOUT */}
+      <div className="flex flex-col gap-3">
+        <h3 className="font-archivo font-semibold text-[18px] text-[#171A1F]">
+          About Us
+        </h3>
 
-          <div className="border-t border-[#DEE1E6] pt-8 text-center">
-            <p className="font-open-sans text-sm text-[#323743]">
-              © 2025 LawGuide India. All rights reserved.
+        <div className="flex flex-col gap-2 text-[14px]">
+          <a className="text-[#323743] hover:text-[#197DCA]">Our Mission</a>
+          <a className="text-[#323743] hover:text-[#197DCA]">Team</a>
+          <a className="text-[#323743] hover:text-[#197DCA]">Careers</a>
+          <a className="text-[#323743] hover:text-[#197DCA]">Contact</a>
+        </div>
+      </div>
+
+      {/* CONTACT */}
+      <div className="flex flex-col gap-4">
+        <h3 className="font-archivo font-semibold text-[18px] text-[#171A1F]">
+          Contact Us
+        </h3>
+
+        <div className="flex flex-col gap-3 text-[14px]">
+          <div className="flex items-start gap-2">
+            <MapPin size={16} className="text-[#323743] mt-0.5" />
+            <p className="text-[#323743] leading-tight">
+              123 Legal Avenue,
+              <br /> Mumbai, India
             </p>
           </div>
+
+          <div className="flex items-center gap-2">
+            <Phone size={16} className="text-[#323743]" />
+            <span className="text-[#323743]">+91 1800 123 4567</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Mail size={16} className="text-[#323743]" />
+            <span className="text-[#323743]">info@lawguideindia.com</span>
+          </div>
         </div>
-      </footer>
+
+        {/* SOCIAL ICONS */}
+        <div className="flex gap-3 pt-2">
+          <Facebook size={18} className="text-[#323743] hover:text-[#197DCA]" />
+          <Twitter size={18} className="text-[#323743] hover:text-[#197DCA]" />
+          <Linkedin size={18} className="text-[#323743] hover:text-[#197DCA]" />
+          <Youtube size={18} className="text-[#323743] hover:text-[#197DCA]" />
+        </div>
+      </div>
+    </div>
+
+    {/* BOTTOM COPYRIGHT */}
+    <div className="border-t border-[#DEE1E6] pt-6 text-center">
+      <p className="font-open-sans text-sm text-[#323743]">
+        © 2025 LawGuide India. All rights reserved.
+      </p>
+    </div>
+  </div>
+</footer>
+
     </div>
   );
 };
