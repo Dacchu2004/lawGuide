@@ -48,6 +48,6 @@ def retrieve_sections(query: str, state: str, top_k: int = 20):
             "section": metadata.get("section"),
             "jurisdiction": metadata.get("jurisdiction"),
             "state": metadata.get("state"),
-            "source_link": metadata.get("source_link"),
+            "sourceLink": metadata.get("source_link") or metadata.get("sourceLink"),
         })
     return docs

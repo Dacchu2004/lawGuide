@@ -128,6 +128,7 @@ const LibraryPage: React.FC = () => {
 
       const mapped: UISection[] = cleaned.map((r: any) => ({
         ...r,
+        sourceLink: r.source_link,   // IMPORTANT FIX
         domainUI: (r.domain as DomainType) || "Unknown",
       }));
 
@@ -347,20 +348,23 @@ const LibraryPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="text-sm text-gray-600">
-                <p>
-                  <b>Jurisdiction:</b> {selectedResult.jurisdiction || "India"}
-                </p>
+              <div className="mt-4">
+                <b>Jurisdiction:</b> {selectedResult.jurisdiction || "India"}
 
-                {selectedResult.sourceLink && (
+                {selectedResult.sourceLink ? (
                   <a
                     href={selectedResult.sourceLink}
                     target="_blank"
-                    className="text-[#258CF4] flex items-center gap-1 mt-2"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#258CF4] text-[#125D95] hover:bg-[#258CF4] hover:text-white transition-all duration-150 cursor-pointer"
                   >
-                    <FileText size={14} />
-                    Official Source
+                    <FileText size={16} />
+                    Open Government Page
                   </a>
+                ) : (
+                  <p className="text-xs text-gray-500 mt-2 italic">
+                    Official document link is not available for this section.
+                  </p>
                 )}
               </div>
             </>

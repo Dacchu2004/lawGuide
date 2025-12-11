@@ -90,7 +90,7 @@ async def search_sections(payload: SectionSearchRequest):
                 text_primary=text_user,
                 text_english=text_en,
                 jurisdiction=d["jurisdiction"],
-                source_link=d.get("source_link") or None,
+                source_link=d.get("sourceLink") or d.get("source_link") or None,
             )
         )
 

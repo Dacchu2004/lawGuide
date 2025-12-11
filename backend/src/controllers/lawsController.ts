@@ -191,8 +191,12 @@ export const searchLaws = async (req: Request, res: Response) => {
         console.error("Semantic fallback failed:", err);
       }
     }
+    const normalized = ranked.map((row) => ({
+      ...row,
+      sourceLink: row.sourceLink ?? null,
+    }));
 
-    res.json({ count: ranked.length, results: ranked, source: "sql" });
+    res.json({ count: normalized.length, results: normalized, source: "sql" });
   } catch (error) {
     console.error("searchLaws error:", error);
     res.status(500).json({ message: "Search failed" });
