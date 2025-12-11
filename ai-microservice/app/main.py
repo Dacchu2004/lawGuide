@@ -18,7 +18,7 @@ from schemas.summary import (
 
 # ======================= CORE AI =======================
 from core.pipeline import process_query
-from services.language import detect_language
+from services.language import detect_language, resolve_language_code
 from services.translation import translate_to_english, translate_from_english
 from services.embeddings import retrieve_sections
 from services.summarizer import summarize_text   # ✅ YOUR REAL AI SUMMARIZER
@@ -71,7 +71,7 @@ async def search_sections(payload: SectionSearchRequest):
     docs = retrieve_sections(
         normalized_query,
         user_state,
-        top_k=payload.top_k or 10
+        top_k=payload.top_k or 20
     )
 
     results = []
@@ -104,31 +104,28 @@ async def search_sections(payload: SectionSearchRequest):
 # ======================= ✅ ✅ ✅ REAL AI LEGAL SUMMARY =======================
 @app.post("/summarize-section", response_model=SectionSummaryResponse)
 async def summarize_section(payload: SectionSummaryRequest):
-    """
-    ✅ Generates a TRUE simplified legal explanation.
-    ✅ Does NOT repeat the original section text.
-    ✅ Uses your GROQ-based pipeline via services/summarizer.py
-    ✅ Handles translation automatically.
-    """
 
     raw_text = payload.text.strip()
-    user_language = payload.user_language or "en"
+
+    # Normalize language (e.g. "English" -> "en", "Kannada" -> "kn")
+    user_language = resolve_language_code(payload.user_language)
 
     if not raw_text or len(raw_text) < 80:
         return SectionSummaryResponse(
             summary="The selected legal text is too short to generate a meaningful explanation."
         )
 
-    # 🔁 Normalize to English
-    normalized_text = translate_to_english(raw_text, user_language)
+    # STEP 1 — convert section to English
+    normalized_text = translate_to_english(raw_text, "auto")
 
-    # 🧠 REAL AI summarization (your logic)
+    # STEP 2 — summarize in stable English
     summary_en = summarize_text(normalized_text)
 
-    # 🔁 Translate back if required
-    if user_language != "en":
-        final_summary = translate_from_english(summary_en, user_language)
+    # STEP 3 — translate ONLY if language != en
+    if user_language.lower() != "en":
+        summary_local = translate_from_english(summary_en, user_language)
     else:
-        final_summary = summary_en
+        summary_local = summary_en
 
-    return SectionSummaryResponse(summary=final_summary)
+    return SectionSummaryResponse(summary=summary_local)
+

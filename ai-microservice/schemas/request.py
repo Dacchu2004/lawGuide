@@ -20,4 +20,4 @@ class SectionSearchRequest(BaseModel):
     query_text: str
     user_state: Optional[str] = None
     user_language: Optional[str] = None
-    top_k: int = 10  # how many sections to return
+    top_k: int = 20  # how many sections to return

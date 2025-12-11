@@ -168,7 +168,7 @@ export const searchLaws = async (req: Request, res: Response) => {
       .map((row) => ({ row, score: scoreRow(row) }))
       .filter((r) => r.score > -999)
       .sort((a, b) => b.score - a.score)
-      .slice(0, 15)
+      .slice(0, 30)
       .map((r) => r.row);
 
     // ✅ SEMANTIC AI FALLBACK

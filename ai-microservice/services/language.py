@@ -58,4 +58,6 @@ def detect_language(text: str, user_language: Optional[str] = None) -> str:
 
     final = resolve_language_code(user_language)
     print(f"🌍 Language Default/Profile: {final}")
+    if not final or final.strip() == "":
+        return "en"
     return final

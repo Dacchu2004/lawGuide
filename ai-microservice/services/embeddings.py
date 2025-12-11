@@ -12,7 +12,7 @@ client = chromadb.PersistentClient(
 collection = client.get_or_create_collection("legal_sections")
 embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
-def retrieve_sections(query: str, state: str, top_k: int = 5):
+def retrieve_sections(query: str, state: str, top_k: int = 20):
     """
     Retrieve relevant legal sections from Chroma using semantic similarity.
     - query: normalized English query

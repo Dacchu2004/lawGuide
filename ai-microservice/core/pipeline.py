@@ -20,6 +20,13 @@ async def process_query(payload: QueryRequest) -> QueryResponse:
 
     # Determine desired language early (so GENERAL replies can be localized)
     detected_lang = detect_language(payload.query_text, payload.user_language)
+    # SAFE fallback — prevent empty or invalid languages
+    if not detected_lang or detected_lang.strip() == "":
+        detected_lang = payload.user_language or "en"
+
+    # ENFORCE ENGLISH GENERATION for RAG pipeline
+    # We ALWAYS generate answer_en in English first
+    generate_lang = "en"
 
     if intent == "GENERAL":
         reply_en = chat_general(payload.query_text) or "Hello! I am LawGuide AI."
