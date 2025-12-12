@@ -53,189 +53,211 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="font-['Inter'] text-[#171A1F] bg-white overflow-x-hidden">
-      {/* ================= NAVBAR ================= */}
-      <nav className="w-full border-b bg-white">
-        <div className="max-w-6xl mx-auto h-[88px] flex items-center justify-between px-6">
-          {/* Logo */}
-          <img
-            src="/assets/LP-logo.png"
-            alt="LawGuide India"
-            className="h-14 w-auto"
-          />
+  <div className="font-['Inter'] text-[#171A1F] bg-white overflow-x-hidden relative">
+    
 
-          {/* Menu */}
-          <div className="hidden lg:flex items-center gap-1">
-            {["Rights Hub", "AI Auditor", "About us", "Help"].map(
-              (item, index) => (
-                <div
-                  key={item}
-                  className="px-4 py-2 text-[15px] hover:bg-gray-50 rounded flex items-center cursor-default"
-                >
-                  {item}
-                  {index === 0 && (
-                    <ChevronDown className="inline w-4 h-4 ml-1" />
-                  )}
-                </div>
-              )
-            )}
-          </div>
+   {/* ================= NAVBAR ================= */}
+<nav className="w-full bg-white relative">
 
-          {/* Buttons */}
-          <div className="flex items-center gap-4">
+  {/* LOGO placed ON the navbar at top-left, not affecting layout */}
+  <img
+    src="/assets/LP-logo.png"
+    alt="LawGuide India"
+    className="absolute left-[200px] top-[-30px] h-40 w-auto z-30"
+  />
+
+  <div className="max-w-6xl mx-auto h-[70px] flex items-center justify-between px-6 relative">
+
+    {/* LEFT placeholder (keeps menu centered because logo isn't in flex flow) */}
+    <div className="w-[160px]"></div>
+
+    {/* ===== CENTER MENU ===== */}
+    <div className="hidden lg:flex items-center gap-6 mx-auto">
+      {["Rights Hub", "AI Auditor", "About us", "Help"].map((item, index) => (
+        <div
+          key={item}
+          className="text-[16px] flex items-center cursor-pointer hover:text-[#379AE6]"
+        >
+          {item}
+          {index === 0 && <ChevronDown className="w-4 h-4 ml-1" />}
+        </div>
+      ))}
+    </div>
+
+    {/* ===== RIGHT BUTTON ===== */}
+    <button
+      onClick={() => handleNavigation("/home")}
+      className="h-[38px] px-4 bg-[#379AE6] text-white text-[15px] rounded-[8px] hover:bg-[#197DCA]"
+    >
+      Get started
+    </button>
+
+  </div>
+</nav>
+
+
+
+    {/* ================= HERO SECTION ================= */}
+{/* ================= HERO SECTION ================= */}
+<section className="max-w-7xl mx-auto px-6 py-20 flex flex-col lg:flex-row items-center justify-between relative">
+
+  {/* LEFT SIDE TEXT */}
+  <div className="lg:w-[55%] relative">
+
+    {/* Hammer Illustration */}
+    <img
+      src="/assets/LP-hand.png"
+      className="absolute right-[-95px] top-[245px] w-[260px] hidden lg:block z-20"
+    />
+
+    <h1 className="font-['Archivo'] text-[56px] leading-[66px] font-bold mb-7">
+      Simplify Indian Law. <br />
+      Know Your Rights.
+    </h1>
+
+    <p className="text-[18px] leading-[28px] text-[#565D6D] mb-12 max-w-lg">
+      A Responsible AI platform that explains your rights and retrieves
+      accurate legal sections from the Bharatiya Nyaya Sanhita (BNS) & more.
+    </p>
+
+    {/* CTA BUTTONS */}
+    <div className="flex gap-5">
+      <button
+        onClick={() =>
+          handleNavigation("/home/chat", {
+            autoQuery: "Help me with a legal issue.",
+          })
+        }
+        className="h-[50px] px-7 bg-[#379AE6] text-white text-[17px] rounded-[8px] hover:bg-[#197DCA] font-medium"
+      >
+        Chat with AI
+      </button>
+
+      <button
+        onClick={() => handleNavigation("/home/library")}
+        className="h-[50px] px-7 border border-[#66BCFF] text-[#66BCFF] text-[17px] rounded-[8px] hover:text-[#007EDE] hover:border-[#007EDE]"
+      >
+        Learn more
+      </button>
+    </div>
+  </div>
+
+  {/* RIGHT SIDE VISUALS */}
+  <div className="lg:w-[45%] relative flex flex-col gap-8 items-start mt-20 lg:mt-0">
+
+    {/* Curved BG Shape */}
+    <img
+      src="/assets/LP-BG.svg"
+      className="absolute right-[05px] top-[0px] w-[900px] hidden xl:block z-0"
+    />
+
+    {/* Lady Justice */}
+    <img
+      src="/assets/LP-lady.png"
+      alt="Justice"
+      className="absolute right-[-190px] top-[-120px] w-[350px] hidden xl:block z-20"
+    />
+
+    {/* CARD 1 */}
+    <div className="w-[360px] bg-white rounded-[18px] shadow-lg p-3 flex h-[120px] z-30 ml-[80px]">
+      <img
+        src="/assets/kids_education.jpg"
+        className="h-full w-[130px] rounded-[10px] object-cover"
+      />
+      <div className="ml-3 flex flex-col">
+        <h3 className="font-['Archivo'] text-[16px] font-bold">Property Disputes</h3>
+        <span className="mt-2 bg-[#F3F4F6] px-2 py-1 rounded-[12px] text-[11px] text-[#323743] w-fit">
+          Civil Law
+        </span>
+        <span className="text-[#379AE6] text-[13px] mt-auto cursor-pointer hover:underline">
+          View more
+        </span>
+      </div>
+    </div>
+
+    {/* CARD 2 */}
+    <div className="w-[360px] bg-white rounded-[18px] shadow-lg p-3 flex h-[120px] ml-[80px] z-30">
+      <img
+        src="/assets/doctor_patient.jpg"
+        className="h-full w-[130px] rounded-[10px] object-cover"
+      />
+      <div className="ml-3 flex flex-col">
+        <h3 className="font-['Archivo'] text-[16px] font-bold">Cyber Fraud & IT</h3>
+        <span className="mt-2 bg-[#F3F4F6] px-2 py-1 rounded-[12px] text-[11px] text-[#323743] w-fit">
+          Cyber Law
+        </span>
+        <span className="text-[#379AE6] text-[13px] mt-auto cursor-pointer hover:underline">
+          View more
+        </span>
+      </div>
+    </div>
+
+    {/* CARD 3 */}
+    <div className="w-[360px] bg-white rounded-[18px] shadow-lg p-3 flex h-[120px] z-30 ml-[80px]">
+      <img
+        src="/assets/women_safety.jpg"
+        className="h-full w-[130px] rounded-[10px] object-cover"
+      />
+      <div className="ml-3 flex flex-col">
+        <h3 className="font-['Archivo'] text-[16px] font-bold">Women&apos;s Safety</h3>
+        <span className="mt-2 bg-[#F3F4F6] px-2 py-1 rounded-[12px] text-[11px] text-[#323743] w-fit">
+          Criminal
+        </span>
+        <span className="text-[#379AE6] text-[13px] mt-auto cursor-pointer hover:underline">
+          View more
+        </span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+
+    {/* ================= EXPLORE LAWS ================= */}
+    <section className="max-w-6xl mx-auto mt-20 mb-24 px-6 relative">
+
+      {/* Splash decoration (top-left inside container) */}
+      <img
+        src="/assets/LP-splash.svg"
+        className="absolute left-[-70px] top-[-100px] w-[150px] hidden lg:block"
+      />
+
+      <div className="bg-[#ACD5F5] rounded-[18px] p-8 pl-16 flex flex-col lg:flex-row gap-8 items-start relative">
+
+        <h2 className="font-['Archivo'] text-[24px] text-[#197DCA] whitespace-nowrap">
+          Explore Laws:
+        </h2>
+
+        <div className="flex flex-wrap gap-4">
+          {[
+            "Police Rights",
+            "Traffic Rules",
+            "FIR Process",
+            "Consumer Rights",
+            "Rent Agreements",
+          ].map((tag) => (
             <button
-              onClick={() => handleNavigation("/home")}
-              className="h-[36px] px-4 bg-[#379AE6] text-white text-[14px] rounded-[8px] hover:bg-[#197DCA]"
+              key={tag}
+              className="px-5 h-[42px] bg-white rounded-full text-[15px] shadow-sm hover:bg-[#E6F0FF]"
             >
-              Get started
+              {tag}
             </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* ================= HERO SECTION ================= */}
-      <section className="max-w-6xl mx-auto pl-4 pr-6 py-16 flex flex-col lg:flex-row items-center justify-between">
-        {/* LEFT TEXT */}
-        <div className="lg:w-[48%]">
-          <h1 className="font-['Archivo'] text-[52px] leading-[62px] font-bold mb-5">
-            Simplify Indian Law. <br />
-            Know Your Rights.
-          </h1>
-
-          <p className="text-[17px] leading-[27px] text-[#565D6D] mb-10 max-w-md">
-            A Responsible AI platform that explains your rights and retrieves
-            accurate legal sections from the Bharatiya Nyaya Sanhita (BNS) &
-            more.
-          </p>
-
-          {/* CTA BUTTONS */}
-          <div className="flex gap-4">
-            <button
-              onClick={() =>
-                handleNavigation("/home/chat", {
-                  autoQuery: "Help me with a legal issue.",
-                })
-              }
-              className="h-[48px] px-6 bg-[#379AE6] text-white text-[16px] rounded-[6px] hover:bg-[#197DCA] font-medium"
-            >
-              Chat with AI
-            </button>
-
-            <button
-              onClick={() => handleNavigation("/home/library")}
-              className="h-[48px] px-6 border border-[#66BCFF] text-[#66BCFF] text-[16px] rounded-[6px] hover:text-[#007EDE] hover:border-[#007EDE]"
-            >
-              Learn more
-            </button>
-          </div>
+          ))}
         </div>
 
-        {/* RIGHT SIDE VISUALS */}
-        <div className="lg:w-[48%] relative flex flex-col gap-5 items-end mt-10 lg:mt-0">
-          {/* Light Blue Background Shape */}
-          <div className="absolute top-0 right-0 w-[550px] h-[550px] bg-[#D7EBFF] rounded-full -z-10 blur-xl translate-x-10 -translate-y-10"></div>
-
-          {/* Lady Justice Illustration */}
-          <img
-            src="/assets/lady_justice_lineart.png"
-            alt="Justice"
-            className="absolute right-[-20px] top-[-30px] w-[260px] hidden xl:block"
-          />
-
-          {/* CARD 1 */}
-          <div className="w-[350px] bg-white rounded-[16px] shadow border p-2 flex h-[120px] z-10">
-            <img
-              src="/assets/kids_education.jpg"
-              className="h-full w-[130px] rounded-[8px] object-cover"
-            />
-            <div className="ml-3 flex flex-col">
-              <h3 className="font-['Archivo'] text-[15px] font-bold">
-                Property Disputes
-              </h3>
-              <span className="mt-2 bg-[#F3F4F6] px-2 py-1 rounded-[12px] text-[11px] text-[#323743] w-fit">
-                Civil Law
-              </span>
-              <span className="text-[#379AE6] text-[12px] mt-auto cursor-pointer hover:underline">
-                View more
-              </span>
-            </div>
-          </div>
-
-          {/* CARD 2 */}
-          <div className="w-[350px] bg-white rounded-[16px] shadow border p-2 flex h-[120px] ml-[-25px] z-10">
-            <img
-              src="/assets/doctor_patient.jpg"
-              className="h-full w-[130px] rounded-[8px] object-cover"
-            />
-            <div className="ml-3 flex flex-col">
-              <h3 className="font-['Archivo'] text-[15px] font-bold">
-                Cyber Fraud & IT
-              </h3>
-              <span className="mt-2 bg-[#F3F4F6] px-2 py-1 rounded-[12px] text-[11px] text-[#323743] w-fit">
-                Cyber Law
-              </span>
-              <span className="text-[#379AE6] text-[12px] mt-auto cursor-pointer hover:underline">
-                View more
-              </span>
-            </div>
-          </div>
-
-          {/* CARD 3 */}
-          <div className="w-[350px] bg-white rounded-[16px] shadow border p-2 flex h-[120px] z-10">
-            <img
-              src="/assets/women_safety.jpg"
-              className="h-full w-[130px] rounded-[8px] object-cover"
-            />
-            <div className="ml-3 flex flex-col">
-              <h3 className="font-['Archivo'] text-[15px] font-bold">
-                Women's Safety
-              </h3>
-              <span className="mt-2 bg-[#F3F4F6] px-2 py-1 rounded-[12px] text-[11px] text-[#323743] w-fit">
-                Criminal
-              </span>
-              <span className="text-[#379AE6] text-[12px] mt-auto cursor-pointer hover:underline">
-                View more
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= EXPLORE LAWS ================= */}
-      <section className="max-w-6xl mx-auto mt-12 mb-20 px-6">
-        <div className="bg-[#ACD5F5] rounded-[16px] p-8 flex flex-col lg:flex-row gap-6 items-start">
-          <h2 className="font-['Archivo'] text-[22px] text-[#197DCA] whitespace-nowrap">
-            Explore Laws:
-          </h2>
-
-          <div className="flex flex-wrap gap-3">
-            {[
-              "Police Rights",
-              "Traffic Rules",
-              "FIR Process",
-              "Consumer Rights",
-              "Rent Agreements",
-            ].map((tag) => (
-              <button
-                key={tag}
-                className="px-4 h-[40px] bg-white rounded-full text-[15px] hover:bg-[#E6F0FF]"
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+      </div>
+    </section>
 
       {/* ================= HOW IT WORKS SECTION ================= */}
-      <section className="w-full bg-[#1D71C7] py-16 relative overflow-hidden">
+      <section className="w-full bg-[#D9ECFF] py-16 relative overflow-hidden">
         <div className="max-w-6xl mx-auto pl-4 pr-6 relative z-10">
           {/* ------- TITLE ------- */}
           <div className="text-center mb-16 flex justify-center items-center gap-3">
-            <h2 className="font-['Archivo'] font-bold text-[40px] leading-tight text-white">
+            <h2 className="font-['Archivo'] font-bold text-[40px] leading-tight text-black">
               Your Legal Journey, Simplified
             </h2>
-            <Gavel className="w-[70px] h-[70px] text-white stroke-[1.3]" />
+            <Gavel className="w-[70px] h-[70px] text-black stroke-[1.3]" />
           </div>
 
           {/* ------- 3 CARDS ------- */}
@@ -259,7 +281,7 @@ const LandingPage = () => {
             ].map((card, i) => (
               <div
                 key={i}
-                className="w-[320px] h-[240px] bg-white/15 rounded-[8px] shadow-sm flex flex-col items-center text-center p-6"
+                className="w-[320px] h-[240px] bg-[#379AE6] rounded-[8px] shadow-sm flex flex-col items-center text-center p-6"
               >
                 <div className="w-[100px] h-[100px] bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm mb-4">
                   <card.icon className="w-[58px] h-[58px] text-white" />
@@ -287,10 +309,10 @@ const LandingPage = () => {
               { val: "AI", label: "Audited" },
             ].map((stat, i) => (
               <div key={i} className="flex flex-col items-center">
-                <span className="font-['Archivo'] text-[28px] font-semibold text-white leading-tight">
+                <span className="font-['Archivo'] text-[28px] font-semibold text-black leading-tight">
                   {stat.val}
                 </span>
-                <span className="font-['Inter'] text-[17px] text-white/90">
+                <span className="font-['Inter'] text-[17px] text-black/90">
                   {stat.label}
                 </span>
               </div>
