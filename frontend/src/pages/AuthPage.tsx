@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, User, Mail, Lock, Languages, MapPin } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import useSound from "use-sound";
@@ -9,10 +9,17 @@ const clickSfx = "/assets/key-click.wav";
 import SearchableDropdown from "../components/SearchableDropdown";
 
 export default function AuthPage() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [playClick] = useSound(clickSfx, { volume: 0.6 });
+
+  // ✅ Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/home", { replace: true });
+    }
+  }, [user, navigate]);
 
   // State for Sliding Animation (true = showing Sign Up)
   const [isSignUp, setIsSignUp] = useState(false);
@@ -307,7 +314,7 @@ export default function AuthPage() {
             className="bg-white flex flex-col items-center justify-start h-full px-10 py-8 text-center relative overflow-hidden"
           >
             <h1 className="font-roboto font-bold text-[30px] leading-[36px] text-[#171A1F] mb-2 mt-10">
-              Welcome back!
+              Welcome back to LawGuide!
             </h1>
             <p className="font-open-sans text-[14px] text-[#323743] mb-6">
               Sign in to access your legal tools
@@ -431,10 +438,10 @@ export default function AuthPage() {
               }`}
             >
               <h1 className="font-roboto font-bold text-[36px] mb-4">
-                Welcome Back!
+                Welcome back to LawGuide!
               </h1>
               <p className="font-open-sans text-[14px] mb-8 leading-6">
-                To keep connected with us please login with your personal info
+                Sign in to continue exploring laws and legal guidance.
               </p>
               <button
                 onClick={() => setIsSignUp(false)}
@@ -451,11 +458,10 @@ export default function AuthPage() {
               }`}
             >
               <h1 className="font-roboto font-bold text-[36px] mb-4">
-                New Here?
+                New to LawGuide?
               </h1>
               <p className="font-open-sans text-[14px] mb-8 leading-6">
-                Enter your personal details and start your legal journey with
-                LawGuide
+                Create your account to explore laws, understand your rights, and get AI-powered legal guidance.
               </p>
               <button
                 onClick={() => setIsSignUp(true)}

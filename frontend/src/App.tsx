@@ -4,6 +4,7 @@ import AuthPage from "./pages/AuthPage";
 import HomePage from "./pages/HomePage";
 import ChatPage from "./pages/ChatPage";
 import LibraryPage from "./pages/LibraryPage";
+import RightsPage from "./pages/RightsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import HomeLayout from "./layouts/HomeLayout";
 
@@ -29,6 +30,8 @@ function App() {
         <Route path="chat" element={<ChatPage />} />
         {/* /home/library */}
         <Route path="library" element={<LibraryPage />} />
+        {/* /home/rights */}
+        <Route path="rights" element={<RightsPage />} />
       </Route>
 
       {/* ✅ Fallback */}

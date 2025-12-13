@@ -28,6 +28,23 @@ async def process_query(payload: QueryRequest) -> QueryResponse:
     # We ALWAYS generate answer_en in English first
     generate_lang = "en"
 
+    if intent == "API_ERROR":
+        msg_en = (
+            "I'm experiencing high traffic or connection issues with the AI service. "
+            "Please try again in a moment."
+        )
+        msg_local = translate_from_english(msg_en, detected_lang) if detected_lang != "en" else msg_en
+        return QueryResponse(
+            status="refusal",
+            answer_primary=msg_local,
+            answer_english=msg_en,
+            confidence=0.0,
+            detected_language=detected_lang,
+            retrieved_sections=[],
+            error_type="api_overload",
+            high_risk=False
+        )
+
     if intent == "GENERAL":
         reply_en = chat_general(payload.query_text) or "Hello! I am LawGuide AI."
         # translate back to user's desired language if not English

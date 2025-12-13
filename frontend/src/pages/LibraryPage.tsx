@@ -20,12 +20,90 @@ interface UISection extends LibrarySection {
   domainUI: DomainType;
 }
 
+// Hardcoded Default Laws (Real Text for Demo)
+const DEFAULT_LAWS: UISection[] = [
+  {
+    id: "def1",
+    act: "Bharatiya Nyaya Sanhita 2023",
+    section: "Section 103",
+    text: "Punishment for murder. — (1) Whoever commits murder shall be punished with death or imprisonment for life, and shall also be liable to fine. (2) When a group of five or more persons acting in concert commits murder on the ground of race, caste or community, sex, place of birth, language, personal belief or any other like ground each member of such group shall be punished with death or with imprisonment for life, and shall also be liable to fine.",
+    domain: "Criminal",
+    jurisdiction: "central",
+    domainUI: "Criminal",
+  },
+  {
+    id: "def2",
+    act: "Constitution of India",
+    section: "Article 21",
+    text: "Protection of life and personal liberty. — No person shall be deprived of his life or personal liberty except according to procedure established by law.",
+    domain: "Constitutional",
+    jurisdiction: "central",
+    domainUI: "Constitutional",
+  },
+  {
+    id: "def3",
+    act: "Information Technology Act, 2000",
+    section: "Section 66D",
+    text: "Punishment for cheating by personation by using computer resource. — Whoever, by means of any communication device or computer resource cheats by personation, shall be punished with imprisonment of either description for a term which may extend to three years and shall also be liable to fine which may extend to one lakh rupees.",
+    domain: "Cyber",
+    jurisdiction: "central",
+    domainUI: "Cyber",
+  },
+  {
+    id: "def4",
+    act: "Bharatiya Nagarik Suraksha Sanhita 2023",
+    section: "Section 173",
+    text: "Information in cognizable cases. — (1) Every information relating to the commission of a cognizable offence, if given orally to an officer in charge of a police station, shall be reduced to writing by him or under his direction, and be read over to the informant; and every such information, whether given in writing or reduced to writing as aforesaid, shall be signed by the person giving it, and the substance thereof shall be entered in a book to be kept by such officer in such form as the State Government may prescribe in this behalf.",
+    domain: "Criminal",
+    jurisdiction: "central",
+    domainUI: "Criminal",
+  },
+  {
+    id: "def6",
+    act: "Consumer Protection Act, 2019",
+    section: "Section 2(9)",
+    text: "Consumer rights includes,— (i) the right to be protected against the marketing of goods, products or services which are hazardous to life and property; (ii) the right to be informed about the quality, quantity, potency, purity, standard and price of goods, products or services, as the case may be, so as to protect the consumer against unfair trade practices; (iii) the right to be assured, wherever possible, access to a variety of goods, products or services at competitive prices.",
+    domain: "Consumer",
+    jurisdiction: "central",
+    domainUI: "Consumer",
+  },
+  {
+    id: "def7",
+    act: "Hindu Marriage Act, 1955",
+    section: "Section 13",
+    text: "Divorce. — (1) Any marriage solemnized, whether before or after the commencement of this Act, may, on a petition presented by either the husband or the wife, be dissolved by a decree of divorce on the ground that the other party — (ia) has, after the solemnization of the marriage, treated the petitioner with cruelty; or (ib) has deserted the petitioner for a continuous period of not less than two years immediately preceding the presentation of the petition.",
+    domain: "Family",
+    jurisdiction: "central",
+    domainUI: "Family",
+  },
+  {
+    id: "def8",
+    act: "Motor Vehicles Act, 1988",
+    section: "Section 184",
+    text: "Driving dangerously. — (1) Whoever drives a motor vehicle at a speed or in a manner which is dangerous to the public, having regard to all the circumstances of the case including the nature, condition and use of the place where the vehicle is driven and the amount of traffic which actually is at the time or which might reasonably be expected to be in the place, shall be punishable for the first offence with imprisonment for a term which may extend to one year but which may not be less than six months or with fine which may extend to ten thousand rupees or with both.",
+    domain: "Criminal",
+    jurisdiction: "central",
+    domainUI: "Criminal",
+  },
+  {
+    id: "def10",
+    act: "Constitution of India",
+    section: "Article 19",
+    text: "Protection of certain rights regarding freedom of speech etc.—(1) All citizens shall have the right— (a) to freedom of speech and expression; (b) to assemble peaceably and without arms; (c) to form associations or unions; (d) to move freely throughout the territory of India; (e) to reside and settle in any part of the territory of India; and (g) to practise any profession, or to carry on any occupation, trade or business.",
+    domain: "Constitutional",
+    jurisdiction: "central",
+    domainUI: "Constitutional",
+  },
+];
+
 const LibraryPage: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
 
-  const [results, setResults] = useState<UISection[]>([]);
-  const [selectedResult, setSelectedResult] = useState<UISection | null>(null);
+  const [results, setResults] = useState<UISection[]>(DEFAULT_LAWS);
+  const [selectedResult, setSelectedResult] = useState<UISection | null>(
+    DEFAULT_LAWS[0]
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
@@ -64,15 +142,16 @@ const LibraryPage: React.FC = () => {
     });
     */
 
-    // ✅ HANDLE NAVIGATION STATE
-    const state = location.state as { query?: string; domain?: string } | null;
-    if (state?.query) {
-      setSearchQuery(state.query);
-    }
-    if (state?.domain) {
-      setSelectedDomain(state.domain);
-    }
-  }, [location.state]);
+    // ✅ HANDLE NAVIGATION STATE - REMOVED from here to allow handleSearch usage
+    // const state = location.state as { query?: string; domain?: string } | null;
+    // ... (logic moved below)
+  }, []); // Only run once for Acts init
+
+  // ✅ SCROLL TO TOP ON MOUNT
+  useEffect(() => {
+    const main = document.getElementById("main-content");
+    if (main) main.scrollTop = 0;
+  }, []);
 
   const toggleAct = (act: string) => {
     setFilters((prev) => ({ ...prev, [act]: !prev[act] }));
@@ -94,11 +173,14 @@ const LibraryPage: React.FC = () => {
   };
 
   // ✅ SAFE SEARCH (NO UI CHANGE)
-  const handleSearch = async () => {
-    // FIX: Allow search if domain is selected, even if query is empty
-    if (!searchQuery.trim() && !selectedDomain) {
-      setResults([]);
-      setSelectedResult(null);
+  const handleSearch = async (qOverride?: string, dOverride?: string) => {
+    const q = qOverride !== undefined ? qOverride : searchQuery;
+    const d = dOverride !== undefined ? dOverride : selectedDomain;
+
+    // FIX: If query and domain are empty, show defaults
+    if (!q.trim() && !d) {
+      setResults(DEFAULT_LAWS);
+      setSelectedResult(DEFAULT_LAWS[0]);
       setAiSummary("");
       return;
     }
@@ -111,9 +193,9 @@ const LibraryPage: React.FC = () => {
         .map(([act]) => act);
 
       const data = await searchLibrary({
-        query: searchQuery.trim(),
+        query: q.trim(),
         act: activeActs.length === 1 ? activeActs[0] : "",
-        domain: selectedDomain || "",
+        domain: d || "",
         jurisdiction: selectedJurisdiction || "",
       });
 
@@ -128,7 +210,7 @@ const LibraryPage: React.FC = () => {
 
       const mapped: UISection[] = cleaned.map((r: any) => ({
         ...r,
-        sourceLink: r.source_link,   // IMPORTANT FIX
+        sourceLink: r.source_link, // IMPORTANT FIX
         domainUI: (r.domain as DomainType) || "Unknown",
       }));
 
@@ -145,8 +227,25 @@ const LibraryPage: React.FC = () => {
     }
   };
 
+  // Handle Navigation Loop from Home Page
   useEffect(() => {
-    if (searchQuery.trim() || selectedDomain) {
+    const state = location.state as { query?: string; domain?: string } | null;
+    if (state) {
+      if (state.query) setSearchQuery(state.query);
+      if (state.domain) setSelectedDomain(state.domain);
+
+      // Trigger search immediately with incoming values
+      handleSearch(state.query, state.domain);
+
+      // Clear state to prevent loop on refresh? (Optional, but React Router keeps state)
+      // window.history.replaceState({}, document.title) // risky if user refreshes
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    // Only auto-search if filters change, NOT purely on text change (user must click search)
+    // But if domain changes via UI, we might want to auto-search
+    if (selectedDomain) {
       handleSearch();
     }
   }, [selectedDomain, selectedJurisdiction, filters]);
@@ -197,7 +296,7 @@ const LibraryPage: React.FC = () => {
           </div>
 
           <button
-            onClick={handleSearch}
+            onClick={() => handleSearch()}
             disabled={isSearching}
             className="bg-[#258CF4] text-white px-10 h-[52px] rounded-full"
           >
@@ -350,7 +449,6 @@ const LibraryPage: React.FC = () => {
 
               <div className="mt-4">
                 <b>Jurisdiction:</b> {selectedResult.jurisdiction || "India"}
-
                 {selectedResult.sourceLink ? (
                   <a
                     href={selectedResult.sourceLink}

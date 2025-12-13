@@ -55,11 +55,16 @@ def _groq_chat(
 
     try:
         resp = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=40)
-        resp.raise_for_status()
+        
+        if resp.status_code != 200:
+            print(f"⚠ Groq API Error ({resp.status_code}): {resp.text}")
+            return None
+            
         data = resp.json()
         return data["choices"][0]["message"]["content"].strip()
+        
     except Exception as e:
-        print(f"🚨 Groq API Error: {str(e)}")
+        print(f"🚨 Groq API Exception: {str(e)}")
         return None
 
 
@@ -124,8 +129,8 @@ def classify_intent(query: str) -> str:
     # Quick classification using Groq
     resp = _groq_chat(msgs, max_tokens=12, temperature=0.0)
     if not resp:
-        # If LLM fails, default to LEGAL (safer for legal assistant — do not hallucinate)
-        return "LEGAL"
+        # If LLM fails (e.g. rate limit), return API_ERROR to prevent further pipeline failures
+        return "API_ERROR"
 
     intent = resp.upper().strip()
     if intent not in ["GENERAL", "LEGAL", "OFF_TOPIC", "ILLEGAL"]:

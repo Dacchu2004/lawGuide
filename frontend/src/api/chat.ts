@@ -52,36 +52,25 @@ export interface ChatSessionDetail extends ChatSession {
 }
 
 // ================= HISTORY API =================
+// Using 'api' client automatically handles the Bearer token!
 
 export const getHistorySessions = async (): Promise<ChatSession[]> => {
-    const token = localStorage.getItem("lg_token");
-    const response = await axios.get(`${API_URL}/ai/history`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await api.get("/ai/history");
     return response.data;
   };
   
 export const getHistorySession = async (id: number): Promise<ChatSessionDetail> => {
-    const token = localStorage.getItem("lg_token");
-    const response = await axios.get(`${API_URL}/ai/history/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await api.get(`/ai/history/${id}`);
     return response.data;
 };
   
 export const createHistorySession = async (): Promise<ChatSession> => {
-    const token = localStorage.getItem("lg_token");
-    const response = await axios.post(`${API_URL}/ai/history`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await api.post("/ai/history", {});
     return response.data;
 };
 
 export const deleteHistorySession = async (id: number): Promise<void> => {
-    const token = localStorage.getItem("lg_token");
-    await axios.delete(`${API_URL}/ai/history/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
+    await api.delete(`/ai/history/${id}`);
 };
 
 // ================= EXISTING CHAT API =================

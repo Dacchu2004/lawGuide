@@ -1,36 +1,40 @@
 // frontend/src/layouts/HomeLayout.tsx
 import { Outlet, useNavigate } from "react-router-dom";
-import { Globe } from "lucide-react";
+import { Globe, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import SearchableDropdown from "../components/SearchableDropdown";
+import { useState } from "react";
 
 export default function HomeLayout() {
   const navigate = useNavigate();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/auth", { replace: true });
+  };
 
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden">
       {/* NAVBAR */}
       <nav className="relative h-[56px] bg-[#197DCA] text-white px-6 flex items-center justify-between sticky top-0 z-50 shadow-md">
-        {/* LEFT: LOGO + TITLE (OVERLAP SYSTEM) */}
+        {/* LEFT */}
         <div
           onClick={() => navigate("/home")}
           className="relative flex items-center cursor-pointer"
         >
-          {/* BIG LOGO */}
           <img
             src="/assets/LP-whiteLogo.png"
             alt="LawGuide India"
             className="absolute left-0 top-1/2 -translate-y-1/2 h-[68px] w-auto object-contain"
           />
-
-          {/* TEXT OVERLAPPING LOGO SPACE */}
-          <span className="ml-[62px] font-archivo font-semibold text-[17px] leading-none whitespace-nowrap">
+          <span className="ml-[62px] font-archivo font-semibold text-[17px] whitespace-nowrap">
             LawGuide India
           </span>
         </div>
 
-        {/* CENTER MENU */}
+        {/* CENTER */}
         <div className="hidden md:flex items-center gap-10">
           <button
             onClick={() => navigate("/home/chat")}
@@ -52,9 +56,9 @@ export default function HomeLayout() {
           </button>
         </div>
 
-        {/* RIGHT SIDE */}
+        {/* RIGHT */}
         <div className="flex items-center gap-6">
-          {/* Language Dropdown */}
+          {/* Language */}
           <SearchableDropdown
             options={[
               "English",
@@ -73,10 +77,10 @@ export default function HomeLayout() {
             placeholder="Language"
             icon={<Globe size={16} />}
             align="right"
-            className="h-auto p-0 border-none bg-transparent text-white text-sm opacity-90 hover:opacity-100 flex gap-1 shadow-none min-w-0"
+            className="h-auto p-0 border-none bg-transparent text-white text-sm opacity-90 hover:opacity-100"
           />
 
-          {/* State Dropdown */}
+          {/* State */}
           <SearchableDropdown
             options={[
               "Andhra Pradesh",
@@ -112,19 +116,42 @@ export default function HomeLayout() {
             onChange={(val) => updateUser({ state: val })}
             placeholder="State"
             align="right"
-            className="h-auto p-0 border-none bg-transparent text-white text-sm opacity-90 hover:opacity-100 flex gap-1 shadow-none min-w-0"
+            className="h-auto p-0 border-none bg-transparent text-white text-sm opacity-90 hover:opacity-100"
           />
 
-          <img
-            src="/assets/default_user.png"
-            alt="User"
-            className="h-8 w-8 rounded-full border border-white/40 object-cover"
-          />
+          {/* PROFILE HOVER ZONE — FIXED PROPERLY */}
+          <div
+            className="relative"
+            onMouseEnter={() => setShowProfileMenu(true)}
+            onMouseLeave={() => setShowProfileMenu(false)}
+          >
+            {/* Invisible hover padding */}
+            <div className="absolute -inset-x-2 -top-2 h-[120px]" />
+
+            {/* Avatar */}
+            <img
+              src="/assets/profile.png"
+              alt="User"
+              className="relative h-8 w-8 rounded-full border border-white/40 object-cover cursor-pointer z-10"
+            />
+
+            {showProfileMenu && (
+              <div className="absolute right-0 top-10 w-44 bg-white text-gray-800 rounded-lg shadow-lg border z-20">
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 text-sm flex items-center gap-2 hover:bg-red-50 text-red-600"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
-      {/* PAGE CONTENT */}
-      <main className="flex-1 overflow-auto">
+      {/* CONTENT */}
+      <main id="main-content" className="flex-1 overflow-auto">
         <Outlet />
       </main>
     </div>

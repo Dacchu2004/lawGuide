@@ -30,6 +30,7 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     req.user = decoded; // 👈 Only decoded user info
     next();
   } catch (error) {
+    console.error("Auth Middleware Error:", error);
     res.status(401).json({ message: "Invalid or expired token" });
   }
 };
