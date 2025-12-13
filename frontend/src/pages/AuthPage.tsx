@@ -93,10 +93,10 @@ export default function AuthPage() {
     "w-full h-[40px] px-3 border border-[#DEE1E6] rounded-[6px] text-[14px] font-open-sans text-[#171A1F] bg-white appearance-none cursor-pointer focus:outline-none focus:border-[#2F8EFF]";
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#F8F9FA] font-sans overflow-hidden py-4">
+    <div className="flex items-center justify-center min-h-screen w-full bg-[#D9ECFF] font-sans overflow-hidden py-4">
       {/* === MAIN CONTAINER (Reduced Height to 700px) === */}
       <div
-        className={`relative w-full max-w-[1000px] h-[700px] bg-white rounded-[30px] shadow-[0_5px_15px_rgba(0,0,0,0.35)] overflow-hidden ${
+        className={`relative w-full max-w-[1000px] h-[700px] bg-white rounded-[40px] shadow-[0_5px_15px_rgba(0,0,0,0.35)] overflow-hidden mx-auto ${
           isSignUp ? "active" : ""
         }`}
         id="container"
@@ -193,9 +193,15 @@ export default function AuthPage() {
                     className={selectClass}
                   >
                     <option>English</option>
+                    <option>Tamil</option>
                     <option>Hindi</option>
                     <option>Marathi</option>
                     <option>Kannada</option>
+                    <option>Telugu</option>
+                    <option>Gujarati</option>
+                    <option>Bengali</option>
+                    <option>Punjabi</option>
+                    <option>Malayalam</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-[#171A1F] pointer-events-none" />
                 </div>
@@ -209,10 +215,34 @@ export default function AuthPage() {
                     }}
                     className={selectClass}
                   >
-                    <option>Maharashtra</option>
-                    <option>Delhi</option>
+                    <option>Andhra Pradesh</option>
+                    <option>Arunachal Pradesh</option>
+                    <option>Assam</option>
+                    <option>Bihar</option>
+                    <option>Chhattisgarh</option>
+                    <option>Goa</option>
+                    <option>Gujarat</option>
+                    <option>Haryana</option>
+                    <option>Himachal Pradesh</option>
+                    <option>Jharkhand</option>
                     <option>Karnataka</option>
+                    <option>Kerala</option>
+                    <option>Madhya Pradesh</option>
+                    <option>Maharashtra</option>
+                    <option>Manipur</option>
+                    <option>Meghalaya</option>
+                    <option>Mizoram</option>
+                    <option>Nagaland</option>
+                    <option>Odisha</option>
+                    <option>Punjab</option>
+                    <option>Rajasthan</option>
+                    <option>Sikkim</option>
                     <option>Tamil Nadu</option>
+                    <option>Telangana</option>
+                    <option>Tripura</option>
+                    <option>Uttar Pradesh</option>
+                    <option>Uttarakhand</option>
+                    <option>West Bengal</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-[#171A1F] pointer-events-none" />
                 </div>
@@ -245,11 +275,22 @@ export default function AuthPage() {
 
             {/* ILLUSTRATION: Court Building (Scaled for 700px height) */}
             <div className="absolute bottom-0 left-0 w-full flex justify-center z-0">
+              {/* IMAGE — free control */}
               <img
-                src="/assets/auth-illustration-signup.png"
+                src="/assets/LP-supreme.png"
                 alt="Court Illustration"
-                className="w-full h-auto object-cover opacity-90 max-h-[220px]"
+                className="absolute object-contain pointer-events-none"
+                style={{
+                  width: "500px", // resize freely
+                  bottom: "-05px", // move up/down
+                  left: "50%", // move left/right
+                  transform: "translateX(-50%)",
+                  opacity: 0.95,
+                }}
               />
+
+              {/* INVISIBLE PLACEHOLDER — preserves layout */}
+              <div className="h-[220px] w-full opacity-0"></div>
             </div>
           </form>
         </div>
@@ -346,7 +387,7 @@ export default function AuthPage() {
 
               <button
                 disabled={loading}
-                className="w-full h-[44px] bg-[#2F8EFF] hover:opacity-90 text-white rounded-[6px] font-medium text-[15px] transition-all shadow-sm"
+                className="w-full h-[44px] mt-2 bg-gradient-to-r from-[#2563EB] to-[#60A5FA] hover:opacity-90 text-white rounded-[6px] font-medium text-[15px] shadow-sm transition-all"
               >
                 {loading ? "Signing In..." : "Sign In"}
               </button>
@@ -355,10 +396,18 @@ export default function AuthPage() {
             {/* ILLUSTRATION: Lady Justice (Scaled for 700px height) */}
             <div className="absolute bottom-0 left-0 w-full flex justify-center z-0">
               <img
-                src="/assets/auth-illustration-login.png"
+                src="/assets/Login.png"
                 alt="Legal Illustration"
-                className="w-[80%] max-w-[320px] object-contain opacity-100"
+                className="absolute object-contain pointer-events-none"
+                style={{
+                  width: "450px",
+                  bottom: "0px",
+                  right: "68%",
+                  transform: "translateX(50%)",
+                }}
               />
+
+              <div className="h-[200px] w-full opacity-0"></div>
             </div>
           </form>
         </div>
