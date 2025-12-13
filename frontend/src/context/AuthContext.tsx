@@ -1,18 +1,22 @@
 // src/context/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
-import type { AuthUser } from "../api/auth";
+import type { AuthUser, UpdateProfilePayload } from "../api/auth";
+import { updateUserRequest } from "../api/auth";
 
 interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;
   login: (user: AuthUser, token: string) => void;
   logout: () => void;
+  updateUser: (data: UpdateProfilePayload) => Promise<void>;
   isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,8 +46,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem("lg_user");
   };
 
+  const updateUser = async (data: UpdateProfilePayload) => {
+    if (!user) return;
+
+    // 1. Optimistic Update
+    const optimisticUser = { ...user, ...data };
+    setUser(optimisticUser as AuthUser);
+    localStorage.setItem("lg_user", JSON.stringify(optimisticUser));
+
+    try {
+      // 2. API Call in Background
+      const { user: updatedUser } = await updateUserRequest(data);
+
+      // 3. Confirm with actual data from server
+      const confirmedUser = { ...optimisticUser, ...updatedUser };
+      setUser(confirmedUser);
+      localStorage.setItem("lg_user", JSON.stringify(confirmedUser));
+    } catch (err) {
+      console.error("Failed to update user context", err);
+      // 4. Revert on failure (optional, or just show toast)
+      // For now, we will notify the user if it fails but keep the optimistic state until refresh,
+      // or we could revert: setUser(user); localStorage.setItem(...)
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider
+      value={{ user, token, login, logout, updateUser, isLoading }}
+    >
       {children}
     </AuthContext.Provider>
   );

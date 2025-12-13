@@ -7,6 +7,8 @@ interface SearchableDropdownProps {
   onChange: (value: string) => void;
   placeholder?: string;
   icon?: ReactNode;
+  className?: string;
+  align?: "left" | "right";
 }
 
 export default function SearchableDropdown({
@@ -15,7 +17,14 @@ export default function SearchableDropdown({
   onChange,
   placeholder = "Select...",
   icon,
-}: SearchableDropdownProps) {
+  className = "", // default empty
+  align = "left",
+  showChevron = true,
+}: SearchableDropdownProps & {
+  className?: string;
+  align?: "left" | "right";
+  showChevron?: boolean;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -42,31 +51,54 @@ export default function SearchableDropdown({
   );
 
   return (
-    <div className="relative w-full" ref={dropdownRef}>
+    <div
+      className={`relative ${className ? "inline-block w-auto" : "w-full"}`}
+      ref={dropdownRef}
+    >
       {/* Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-[41px] px-3 border border-[#DEE1E6] rounded-[6px] text-[14px] font-open-sans text-[#171A1F] bg-white flex items-center justify-between focus:outline-none focus:border-[#2F8EFF] focus:ring-1 focus:ring-[#2F8EFF] transition-all shadow-sm group"
+        className={`flex items-center transition-all group ${
+          className
+            ? className
+            : "w-full px-3 py-2 rounded-[6px] text-[14px] font-open-sans justify-between h-[41px] border border-[#DEE1E6] text-[#171A1F] bg-white shadow-sm focus:outline-none focus:border-[#2F8EFF] focus:ring-1 focus:ring-[#2F8EFF]"
+        }`}
       >
-        <div className="flex items-center gap-2 truncate pr-4">
+        <div
+          className={`flex items-center gap-2 ${
+            className ? "" : "truncate pr-2"
+          }`}
+        >
           {icon && (
-            <span className="text-[#323743] opacity-70 scale-90">{icon}</span>
+            <span
+              className={className ? "" : "text-[#323743] opacity-70 scale-90"}
+            >
+              {icon}
+            </span>
           )}
-          <span className={value ? "text-[#171A1F]" : "text-gray-400"}>
+          <span className={value ? "text-inherit" : "text-gray-400"}>
             {value || placeholder}
           </span>
         </div>
-        <ChevronDown
-          className={`w-4 h-4 text-[#171A1F] transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
+        {showChevron && (
+          <ChevronDown
+            className={`w-4 h-4 transition-transform duration-200 ${
+              isOpen ? "rotate-180" : ""
+            } ${className ? "text-inherit opacity-80" : "text-[#171A1F]"}`}
+          />
+        )}
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-[110%] left-0 w-full bg-white border border-[#DEE1E6] rounded-[8px] shadow-lg z-50 overflow-hidden flex flex-col max-h-[250px] animate-in fade-in zoom-in-95 duration-100">
+        <div
+          className={`absolute top-[110%] ${
+            align === "right" ? "right-0" : "left-0"
+          } bg-white border border-[#DEE1E6] rounded-[8px] shadow-lg z-50 overflow-hidden flex flex-col max-h-[250px] animate-in fade-in zoom-in-95 duration-100 ${
+            className ? "min-w-[150px] w-max" : "w-full"
+          }`}
+        >
           {/* Search Input */}
           <div className="p-2 border-b border-[#F3F4F6] sticky top-0 bg-white">
             <div className="relative">

@@ -37,3 +37,15 @@ export async function loginRequest(payload: LoginPayload): Promise<LoginResponse
 export async function signupRequest(payload: SignupPayload): Promise<void> {
   await api.post("/auth/signup", payload);
 }
+
+export interface UpdateProfilePayload {
+  language?: string;
+  state?: string;
+  username?: string;
+}
+
+// PUT /auth/update
+export async function updateUserRequest(payload: UpdateProfilePayload): Promise<{ user: AuthUser }> {
+  const res = await api.put("/auth/update", payload);
+  return res.data;
+}

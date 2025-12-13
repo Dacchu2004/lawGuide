@@ -2,9 +2,6 @@
 import React from "react";
 import {
   Search,
-  Globe,
-  ChevronDown,
-  MessageCircle,
   BookOpen,
   Gavel,
   Users,
@@ -111,21 +108,20 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-[calc(100vh-80px)] w-full font-sans text-[#171A1F] flex flex-col">
       {/* HERO SECTION */}
-      <section className="relative w-full h-[520px] flex items-center justify-center overflow-hidden">
+      <section className="relative w-full h-screen pt-[56px] flex items-center justify-center overflow-hidden">
 
   {/* Background */}
   <img
-    src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2600"
+    src="/assets/hero.jpg"
     className="absolute inset-0 w-full h-full object-cover"
     alt="Courtroom"
   />
 
-  {/* Blue overlay (Visily style) */}
+  {/* Overlay */}
   <div className="absolute inset-0 bg-[#197DCA]/60" />
 
-  {/* CONTENT */}
+  {/* Content */}
   <div className="relative z-10 max-w-[1200px] mx-auto px-6 text-center text-white">
-
     <h1 className="font-archivo font-bold text-4xl md:text-5xl leading-[1.2] mb-4">
       Navigating India's Legal <br /> Landscape with Ease.
     </h1>
@@ -150,40 +146,62 @@ const HomePage: React.FC = () => {
         Chat with AI
       </button>
     </div>
-
   </div>
 </section>
 
-      {/* EXPLORE LAWS SEARCH */}
-      <section className="bg-white py-14 px-6">
-  <div className="max-w-[1200px] mx-auto text-center">
 
-    <h2 className="font-archivo font-bold text-3xl mb-10 text-[#171A1F]">
+      {/* EXPLORE LAWS SEARCH */}
+      <section className="relative bg-white px-6 py-20 overflow-hidden">
+  {/* DECORATIVE HAND IMAGE */}
+  <img
+    src="/assets/D-hand.png" // your hand image
+    alt=""
+    className="absolute pointer-events-none select-none"
+    style={{
+      width: "260px",   // resize here
+      top: "40px",      // move up/down
+      left: "-20px",   // move left/right (negative allowed)
+      opacity: 0.9,
+    }}
+  />
+
+  <div className="max-w-[1200px] mx-auto text-center relative z-10">
+    <h2 className="font-archivo font-bold text-3xl md:text-4xl mb-12 text-[#171A1F]">
       Explore Laws
     </h2>
 
-    {/* Search Bar */}
-    <div className="relative max-w-2xl mx-auto mb-10">
-      <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#565D6D]" />
+    {/* Search */}
+    <div className="relative max-w-2xl mx-auto mb-12">
+      <Search
+        size={22}
+        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#565D6D]"
+      />
       <input
         type="text"
         placeholder="Search by keyword, case, or section..."
-        className="w-full h-[54px] pl-12 pr-5 rounded-xl border border-[#DEE1E6] shadow-sm text-lg focus:border-[#258CF4] outline-none"
+        className="w-full h-[56px] pl-12 pr-5 rounded-xl border border-[#DEE1E6] shadow-sm text-lg focus:border-[#258CF4] outline-none"
       />
     </div>
 
     {/* Tags */}
-    <div className="flex flex-wrap justify-center gap-3">
-      {["Criminal", "Property", "Corporate", "Cyber", "Consumer", "Constitutional", "Labour"].map((t) => (
+    <div className="flex flex-wrap justify-center gap-4 max-w-4xl mx-auto">
+      {[
+        "Criminal",
+        "Property",
+        "Corporate",
+        "Cyber",
+        "Consumer",
+        "Constitutional",
+        "Labour",
+      ].map((t) => (
         <button
           key={t}
-          className="px-5 py-2 rounded-full bg-[#379AE6] hover:bg-[#197DCA] text-white text-sm md:text-base font-semibold"
+          className="px-6 py-2.5 rounded-full bg-[#379AE6] hover:bg-[#197DCA] text-white font-semibold transition"
         >
           {t} Law
         </button>
       ))}
     </div>
-
   </div>
 </section>
 
@@ -198,7 +216,12 @@ const HomePage: React.FC = () => {
         Discover Key Legal Domains
       </h2>
       <div className="hidden sm:block text-[#171A1F]">
-        <Gavel size={36} className="-rotate-12" />
+        <img
+  src="/assets/Gavel.svg"
+  alt=""
+  className="w-9 h-9 -rotate-12"
+/>
+
       </div>
     </div>
 
@@ -244,65 +267,87 @@ const HomePage: React.FC = () => {
 
 
       {/* ESSENTIAL RESOURCES */}
-      <section className="bg-white py-14 px-4 w-full relative overflow-hidden">
+      <section className="bg-white py-20 px-4 w-full relative overflow-hidden">
   <div className="max-w-[1280px] mx-auto relative">
 
+    {/* TOP BREATHING — prevents cramped feel */}
+    <div className="h-6" />
+
     {/* Heading */}
-    <div className="flex justify-center items-center mb-12 relative">
+    <div className="flex justify-center items-center mb-14 relative">
       <h2 className="font-archivo font-bold text-[34px] leading-tight text-[#171A1F] text-center z-10">
         Essential Legal Guides & Resources
       </h2>
 
-      {/* Light Transparent Icon */}
-      <div className="hidden lg:block absolute top-[-8px] right-[14%] opacity-20 rotate-[12deg]">
-        <BookOpen size={66} className="text-[#171A1F]" />
+      {/* Decorative, low-weight icon */}
+      <div className="hidden lg:block absolute top-[-14px] right-[22%] opacity-20 rotate-[12deg]">
+        <BookOpen size={72} className="text-[#171A1F]" />
       </div>
     </div>
 
     {/* Cards */}
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 lg:px-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-10 px-2 lg:px-6">
       {quickGuides.map((guide, index) => (
         <div
           key={index}
           onClick={() =>
             navigate("/home/chat", { state: { autoQuery: guide.title } })
           }
-          className="bg-[#379AE6] rounded-[14px] p-6 text-white shadow-sm border border-[#DEE1E6]/10 
-                     hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer relative"
+          className="
+            bg-[#379AE6]
+            rounded-[16px]
+            p-7
+            text-white
+            shadow-sm
+            border border-[#DEE1E6]/10
+            hover:shadow-lg
+            hover:-translate-y-1
+            transition-all
+            cursor-pointer
+            relative
+          "
         >
           {/* Title + Bookmark */}
-          <div className="flex items-start justify-between mb-3">
+          <div className="flex items-start justify-between mb-4">
             <h3 className="font-open-sans font-semibold text-[17px] leading-[26px]">
               {guide.title}
             </h3>
 
             <Bookmark
               size={18}
-              className="opacity-80 absolute top-6 right-6"
+              className="opacity-80"
               fill="currentColor"
             />
           </div>
 
           {/* Description */}
-          <p className="font-open-sans text-[14px] leading-[20px] opacity-95">
+          <p className="font-open-sans text-[14px] leading-[21px] opacity-95">
             {guide.description}
           </p>
         </div>
       ))}
     </div>
 
+    {/* BOTTOM BREATHING — avoids abrupt section end */}
+    <div className="h-10" />
+
   </div>
 </section>
-
 
       {/* IMPORTANT RIGHTS */}
       <section className="bg-[#E6F3FF] py-20 px-4 w-full relative overflow-hidden">
   {/* Right Illustration */}
-  <div className="hidden xl:block absolute bottom-0 right-0 z-0 opacity-70">
+  <div className="hidden xl:block absolute inset-0 pointer-events-none z-0">
     <img
-      src="https://cdni.iconscout.com/illustration/premium/thumb/law-book-illustration-download-in-svg-png-gif-file-formats--justice-legal-education-hammer-scale-study-school-pack-interiors-illustrations-5386047.png"
+      src="/assets/LP-splash.svg"
       alt="Rights Illustration"
-      className="w-[260px] h-auto object-contain"
+      className="absolute object-contain"
+      style={{
+        width: "80px",   // resize freely
+        bottom: "110px",   // move up/down
+        left: "600px",    // KEEP POSITIVE when overflow-hidden
+        opacity: 0.9,
+      }}
     />
   </div>
 
@@ -345,14 +390,27 @@ const HomePage: React.FC = () => {
 
       {/* LOGO + DESCRIPTION */}
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
+
+        {/* LOGO CONTAINER (layout-safe) */}
+        <div className="relative">
+
+          {/* LOGO — freely movable */}
           <img
-            src="/assets/logo_blue.png"
-            className="h-14 w-auto"
+            src="/assets/LP-logo.png"
             alt="LawGuide India"
+            className="absolute object-contain"
+            style={{
+              width: "140px",   // ← CHANGE SIZE HERE
+              top: "-40px",       // ← move up/down
+              left: "0px",      // ← move left/right
+            }}
           />
+
+          {/* PLACEHOLDER — keeps layout intact */}
+          <div className="w-[140px] h-[56px] opacity-0"></div>
         </div>
 
+        {/* DESCRIPTION */}
         <p className="font-open-sans text-[#323743] text-[14px] leading-6 max-w-xs">
           Your comprehensive guide to India's legal system.
           Empowering you with knowledge and clarity.
@@ -364,7 +422,6 @@ const HomePage: React.FC = () => {
         <h3 className="font-archivo font-semibold text-[18px] text-[#171A1F]">
           Legal Resources
         </h3>
-
         <div className="flex flex-col gap-2 text-[14px]">
           <a className="text-[#323743] hover:text-[#197DCA]">Bare Acts</a>
           <a className="text-[#323743] hover:text-[#197DCA]">Case Laws</a>
@@ -378,7 +435,6 @@ const HomePage: React.FC = () => {
         <h3 className="font-archivo font-semibold text-[18px] text-[#171A1F]">
           Services
         </h3>
-
         <div className="flex flex-col gap-2 text-[14px]">
           <a className="text-[#323743] hover:text-[#197DCA]">Find a Lawyer</a>
           <a className="text-[#323743] hover:text-[#197DCA]">Online Consultation</a>
@@ -392,7 +448,6 @@ const HomePage: React.FC = () => {
         <h3 className="font-archivo font-semibold text-[18px] text-[#171A1F]">
           About Us
         </h3>
-
         <div className="flex flex-col gap-2 text-[14px]">
           <a className="text-[#323743] hover:text-[#197DCA]">Our Mission</a>
           <a className="text-[#323743] hover:text-[#197DCA]">Team</a>
@@ -411,8 +466,7 @@ const HomePage: React.FC = () => {
           <div className="flex items-start gap-2">
             <MapPin size={16} className="text-[#323743] mt-0.5" />
             <p className="text-[#323743] leading-tight">
-              123 Legal Avenue,
-              <br /> Mumbai, India
+              123 Legal Avenue,<br />Mumbai, India
             </p>
           </div>
 
@@ -443,8 +497,10 @@ const HomePage: React.FC = () => {
         © 2025 LawGuide India. All rights reserved.
       </p>
     </div>
+
   </div>
 </footer>
+
 
     </div>
   );

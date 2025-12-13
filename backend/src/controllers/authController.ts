@@ -96,3 +96,29 @@ export const login = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Login failed", error });
   }
 };
+
+export const updateProfile = async (req: Request, res: Response) => {
+  try {
+    const { id } = (req as any).user; // from auth middleware
+    const { state, language, username } = req.body;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: Number(id) },
+      data: {
+        ...(state && { state }),
+        ...(language && { language }),
+        ...(username && { username }),
+      },
+    });
+
+    const { password: _, ...userData } = updatedUser;
+
+    res.json({
+      message: "Profile updated successfully",
+      user: userData,
+    });
+  } catch (error) {
+    console.error("Update Profile Error:", error);
+    res.status(500).json({ message: "Failed to update profile", error });
+  }
+};

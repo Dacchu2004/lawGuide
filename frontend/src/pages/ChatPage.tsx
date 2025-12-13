@@ -315,7 +315,7 @@ const ChatPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="w-full max-w-2xl space-y-3 mx-auto">
+            <div className="w-full max-w-2xl space-y-1 mx-auto">
               {suggestions.map((card, idx) => (
                 <button
                   key={idx}
