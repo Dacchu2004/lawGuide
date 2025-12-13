@@ -220,12 +220,20 @@ const ChatPage: React.FC = () => {
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-[110%] md:translate-x-0"}
       `}
     >
-      <div className="p-5 flex items-center gap-3">
-        <Scale size={32} className="text-[#125D95]" fill="#125D95" />
-        <h1 className="font-archivo text-xl font-bold tracking-tight">
-          LawGuide India
-        </h1>
-      </div>
+      {/* LEFT: Logo + Brand */}
+<div className="p-0 flex items-center relative">
+  {/* LOGO */}
+  <img
+    src="/assets/LP-logo.png"
+    alt="LawGuide Logo"
+    className="object-contain"
+    style={{
+      width: "120px",     // 🔹 control logo size
+      marginLeft: "75px",// 🔹 overlap transparent padding
+      marginTop: "0px", // 🔹 move up/down
+    }}
+  />
+</div>
 
       <div className="px-4 flex gap-2">
         <button
