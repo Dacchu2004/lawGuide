@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Eye, EyeOff, ChevronDown, User, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, User, Mail, Lock, Languages, MapPin } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import useSound from "use-sound";
 import { useAuth } from "../context/AuthContext";
 import { loginRequest, signupRequest } from "../api/auth";
 
 const clickSfx = "/assets/key-click.wav";
+import SearchableDropdown from "../components/SearchableDropdown";
 
 export default function AuthPage() {
   const { login } = useAuth();
@@ -89,8 +90,6 @@ export default function AuthPage() {
   // --- Visily Styles in Tailwind ---
   const inputClass =
     "w-full h-[40px] px-3 pl-10 border border-[#DEE1E6] rounded-[6px] text-[14px] font-open-sans text-[#171A1F] placeholder-gray-400 focus:outline-none focus:border-[#2F8EFF] focus:ring-1 focus:ring-[#2F8EFF] bg-white transition-colors shadow-sm";
-  const selectClass =
-    "w-full h-[40px] px-3 border border-[#DEE1E6] rounded-[6px] text-[14px] font-open-sans text-[#171A1F] bg-white appearance-none cursor-pointer focus:outline-none focus:border-[#2F8EFF]";
 
   return (
     <div className="flex items-center justify-center min-h-screen w-full bg-[#D9ECFF] font-sans overflow-hidden py-4">
@@ -182,69 +181,71 @@ export default function AuthPage() {
               </div>
 
               {/* Dropdowns */}
-              <div className="flex gap-3">
-                <div className="relative w-1/2">
-                  <select
+              <div className="flex gap-3 w-full">
+                <div className="w-1/2">
+                  <SearchableDropdown
+                    options={[
+                      "English",
+                      "Tamil",
+                      "Hindi",
+                      "Marathi",
+                      "Kannada",
+                      "Telugu",
+                      "Gujarati",
+                      "Bengali",
+                      "Punjabi",
+                      "Malayalam",
+                    ]}
                     value={language}
-                    onChange={(e) => {
-                      setLanguage(e.target.value);
+                    onChange={(val) => {
+                      setLanguage(val);
                       handleKeyDown();
                     }}
-                    className={selectClass}
-                  >
-                    <option>English</option>
-                    <option>Tamil</option>
-                    <option>Hindi</option>
-                    <option>Marathi</option>
-                    <option>Kannada</option>
-                    <option>Telugu</option>
-                    <option>Gujarati</option>
-                    <option>Bengali</option>
-                    <option>Punjabi</option>
-                    <option>Malayalam</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-[#171A1F] pointer-events-none" />
+                    placeholder="Language"
+                    icon={<Languages className="w-3.5 h-3.5" />}
+                  />
                 </div>
 
-                <div className="relative w-1/2">
-                  <select
+                <div className="w-1/2">
+                  <SearchableDropdown
+                    options={[
+                      "Andhra Pradesh",
+                      "Arunachal Pradesh",
+                      "Assam",
+                      "Bihar",
+                      "Chhattisgarh",
+                      "Goa",
+                      "Gujarat",
+                      "Haryana",
+                      "Himachal Pradesh",
+                      "Jharkhand",
+                      "Karnataka",
+                      "Kerala",
+                      "Madhya Pradesh",
+                      "Maharashtra",
+                      "Manipur",
+                      "Meghalaya",
+                      "Mizoram",
+                      "Nagaland",
+                      "Odisha",
+                      "Punjab",
+                      "Rajasthan",
+                      "Sikkim",
+                      "Tamil Nadu",
+                      "Telangana",
+                      "Tripura",
+                      "Uttar Pradesh",
+                      "Uttarakhand",
+                      "West Bengal",
+                    ]}
                     value={state}
-                    onChange={(e) => {
-                      setState(e.target.value);
+                    onChange={(val) => {
+                      setState(val);
                       handleKeyDown();
                     }}
-                    className={selectClass}
-                  >
-                    <option>Andhra Pradesh</option>
-                    <option>Arunachal Pradesh</option>
-                    <option>Assam</option>
-                    <option>Bihar</option>
-                    <option>Chhattisgarh</option>
-                    <option>Goa</option>
-                    <option>Gujarat</option>
-                    <option>Haryana</option>
-                    <option>Himachal Pradesh</option>
-                    <option>Jharkhand</option>
-                    <option>Karnataka</option>
-                    <option>Kerala</option>
-                    <option>Madhya Pradesh</option>
-                    <option>Maharashtra</option>
-                    <option>Manipur</option>
-                    <option>Meghalaya</option>
-                    <option>Mizoram</option>
-                    <option>Nagaland</option>
-                    <option>Odisha</option>
-                    <option>Punjab</option>
-                    <option>Rajasthan</option>
-                    <option>Sikkim</option>
-                    <option>Tamil Nadu</option>
-                    <option>Telangana</option>
-                    <option>Tripura</option>
-                    <option>Uttar Pradesh</option>
-                    <option>Uttarakhand</option>
-                    <option>West Bengal</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-[#171A1F] pointer-events-none" />
+                    placeholder="State"
+                    icon={<MapPin className="w-3.5 h-3.5" />}
+                  />
                 </div>
               </div>
 
