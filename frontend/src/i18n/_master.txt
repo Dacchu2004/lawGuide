@@ -1,0 +1,271 @@
+Here are all the user-visible UI strings extracted from your frontend codebase, grouped by file.
+
+src/layouts/HomeLayout.tsx
+LawGuide India
+Chat
+Library
+Rights
+Language
+State
+Logout
+Chat with AI
+Law Library
+Rights Hub
+
+
+src/pages/LandingPage.tsx
+
+Navigation & Hero:
+Rights Hub
+AI LegalGuide
+Laws
+Library
+Get Started
+Get started
+Simplify Indian Law. Know Your Rights.
+A Responsible AI platform that explains your rights and retrieves accurate legal sections from the Bharatiya Nyaya Sanhita (BNS) & more.
+Chat with AI
+Learn more
+
+Cards & Sections:
+Property Disputes
+Civil Law
+View more
+Cyber Fraud & IT
+Cyber Law
+Women's Safety
+Criminal
+Explore Laws:
+Police Rights
+Traffic Rules
+FIR Process
+Consumer Rights
+Rent Agreements
+
+How It Works:
+Your Legal Journey, Simplified
+Describe Your Issue
+Type your legal problem in plain English or your native language. No complex legal jargon needed.
+AI Retrieves the Law
+Our AI scans the official BNS & BNSS 2023 databases to find the exact Act and Section matching your case.
+Get Verified Advice
+Receive a clear explanation with a confidence score and source links. Dual-phase validated for safety.
+
+Stats:
+New Acts
+Free
+Sections
+Languages
+Access
+Audited
+
+Newsletter:
+Stay Legal Ready.
+Get the latest updates on Indian Law & Rights directly to your inbox.
+Enter your email address
+Get Updates
+Please enter a valid email.
+Subscription failed. Try again.
+
+Footer:
+© 2025 LawGuide India
+Platform
+About LawGuide
+How AI Works
+Open Source Code
+Contact
+Legal
+Privacy Policy
+Terms of Use
+Disclaimer
+Help Center
+
+src/pages/HomePage.tsx
+
+Hero:
+Navigating India's Legal Landscape with Ease.
+Your AI-powered companion for the new Bharatiya Nyaya Sanhita (BNS) and knowing your rights.
+Search Library
+Chat with AI
+
+Explore Laws:
+Explore Laws
+Search by keyword, case, or section...
+Criminal Law
+Property Law
+Corporate Law
+Cyber Law
+Consumer Law
+Constitutional Law
+Labour Law
+
+Legal Domains (Cards):
+Discover Key Legal Domains
+Navigating legal procedures for offenses and defenses, from minor infractions to serious crimes.
+Family Law
+Guidance on marriage, divorce, child custody, adoption, and other domestic relations.
+Consumer Protection Law
+Legal aspects of consumer protection, rights, and remedies.
+Property Law
+Understanding real estate transactions, land disputes, lease agreements, and property rights.
+Cyber & IT Law
+Laws governing internet usage, data privacy, cybersecurity, digital transactions, and online crimes.
+Constitutional Law
+Principles and interpretations of India's foundational law, upholding fundamental rights.
+Civil Law
+Resolving non-criminal disputes such as contract breaches, torts, and personal injury claims.
+Labour Law
+Formation, enforceability, and breaches of legal contracts. Essential for business and employment.
+Explore
+
+Essential Resources:
+Essential Legal Guides & Resources
+Understanding Your Fundamental Rights
+A comprehensive guide to the six fundamental rights guaranteed to every Indian citizen under the Constitution.
+How to File a First Information Report (FIR)
+Step-by-step procedure to file an FIR at your nearest police station or online, and what to do if refused.
+Learn How Law Applies in a Situation
+Outline a situation to see how Indian law generally addresses such matters.
+
+Rights Section:
+Important rights to know
+Right to Equality
+Right to Freedom
+Right Against Exploitation
+Right to Freedom of Religion
+Cultural and Educational Rights
+Right to Constitutional Remedies
+Right to Education
+Women's Rights
+Learn More About Your Rights
+
+Footer:
+Your comprehensive guide to India's legal system. Empowering you with knowledge and clarity.
+Legal Resources
+Bare Acts
+Case Laws
+Legal Forms
+Legal News
+Services
+Find a Lawyer
+Online Consultation
+Document Review
+Legal Aid
+About Us
+Our Mission
+Team
+Careers
+Contact Us
+© 2025 LawGuide India. All rights reserved.
+src/pages/AuthPage.tsx
+Sign Up Form:
+Create Account
+Join LawGuide India today
+Full Name
+Email
+Password
+Language
+State
+I agree to the Terms & Conditions & Privacy Policy
+Creating...
+
+Sign Up
+Switch to Login: "Already have an account?"
+Sign In
+
+Sign In Form:
+Welcome back to LawGuide!
+Sign in to access your legal tools
+Email or Mobile
+Remember me
+Forgot password?
+Signing In...
+Sign In
+Switch to Signup: "New to LawGuide?"
+Create your account to explore laws, understand your rights, and get AI-powered legal guidance.
+Sign Up
+
+Messages:
+Email and password are required.
+Please accept the terms & conditions.
+Login successful!
+Signup successful! Please log in.
+Something went wrong.
+
+
+src/pages/LibraryPage.tsx
+
+Filters & Labels:
+Filters
+Domain
+Criminal
+Property
+Cyber
+Family
+Consumer
+Labour
+Constitutional
+Jurisdiction
+central
+state
+Apply Filters
+
+Search & Results:
+Search by keyword, section, offence...
+Searching...
+Search
+No results found
+Select a result to view details
+Details View:
+AI Explanation
+Generating...
+No AI summary available.
+AI service unavailable.
+
+Jurisdiction:
+India
+Open Government Page
+Official document link is not available for this section.
+General
+
+
+src/pages/ChatPage.tsx
+Sidebar:
+New Consultation
+Recent Consultations
+No history yet.
+Guest
+
+Empty State:
+Your AI Legal Companion for India
+Ask questions in English, Hindi, Kannada, Tamil, or any Indian language
+
+Suggestions:
+What are my Fundamental Rights if arrested?
+How do I file an e-FIR for a lost phone?
+Draft a standard House Rental Agreement format.
+Explain the new Bhartiya Nyaya Sanhita in Hindi.
+Can a shopkeeper charge extra for a carry bag?
+Chat Interaction:
+Type your legal query (e.g., 'Is dowry illegal?')...
+LawGuide AI provides legal information, not professional advice.
+No answer received.
+Sorry, I couldn’t reach the legal assistant right now. Please try again in a moment.
+
+
+src/pages/RightsPage.tsx
+Rights Framework Coming Soon
+We are meticulously crafting a comprehensive guide to your fundamental rights. This section will soon offer detailed insights into the Indian Constitution, empowering you with the knowledge you deserve.
+Back to Home
+Work in Progress
+LawGuide India © 2025
+
+
+src/components/SearchableDropdown.tsx
+Select...
+Search...
+No results found
+
+
+src/components/ProtectedRoute.tsx
+Loading...
