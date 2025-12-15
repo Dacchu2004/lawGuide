@@ -26,6 +26,7 @@ import {
   Send,
   MoreHorizontal,
   BookOpen,
+  ChevronLeft,
 } from "lucide-react";
 
 const ChatPage: React.FC = () => {
@@ -200,7 +201,7 @@ const ChatPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full bg-white font-sans text-[#171A1F] overflow-hidden relative">
+    <div className="flex h-screen md:h-full supports-[height:100dvh]:h-[100dvh] bg-white font-sans text-[#171A1F] overflow-hidden relative">
       {/* Mobile Overlay for Sidebar */}
       {isSidebarOpen && (
         <div
@@ -212,10 +213,10 @@ const ChatPage: React.FC = () => {
       {/* --- SIDEBAR (unchanged visually) --- */}
       <aside
         className={`
-        fixed md:relative z-30
-        h-[96%] top-[2%] left-2 md:left-4
-        w-[280px] bg-[#DAECFA] rounded-2xl flex flex-col
-        transition-transform duration-300 ease-in-out
+        fixed md:relative z-50
+        h-full md:h-[96%] top-0 md:top-[2%] left-0 md:left-4
+        w-[280px] bg-[#DAECFA] rounded-r-2xl md:rounded-2xl flex flex-col
+        transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none
         ${
           isSidebarOpen
             ? "translate-x-0"
@@ -223,19 +224,24 @@ const ChatPage: React.FC = () => {
         }
       `}
       >
-        {/* LEFT: Logo + Brand */}
-        <div className="p-0 flex items-center relative">
+        {/* LEFT: Logo + Brand + Close Button */}
+        <div className="p-4 flex items-center justify-between relative mt-2 md:mt-0">
           {/* LOGO */}
-          <img
-            src="/assets/LP-logo.png"
-            alt="LawGuide Logo"
-            className="object-contain"
-            style={{
-              width: "120px", // 🔹 control logo size
-              marginLeft: "75px", // 🔹 overlap transparent padding
-              marginTop: "0px", // 🔹 move up/down
-            }}
-          />
+          <div className="flex-1 flex justify-center md:justify-center">
+            <img
+              src="/assets/LP-logo.png"
+              alt="LawGuide Logo"
+              className="object-contain h-16 md:h-auto md:w-[120px]"
+            />
+          </div>
+
+          {/* MOBILE CLOSE BUTTON */}
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="md:hidden p-2 text-[#171A1F] hover:bg-black/5 rounded-full"
+          >
+            <ChevronLeft size={24} />
+          </button>
         </div>
 
         <div className="px-4 flex gap-2">
@@ -302,9 +308,9 @@ const ChatPage: React.FC = () => {
       </aside>
 
       {/* --- MAIN CONTENT --- */}
-      <main className="flex-1 flex flex-col h-full relative w-full">
-        {/* Mobile header */}
-        <div className="md:hidden p-4 flex items-center justify-between bg-white border-b">
+      <main className="flex-1 flex flex-col h-full relative w-full overflow-hidden">
+        {/* Mobile header (Sticky) */}
+        <div className="md:hidden p-4 flex items-center justify-between bg-white border-b sticky top-0 z-10 shadow-sm">
           <button onClick={() => setIsSidebarOpen(true)} className="p-2">
             <Menu size={24} />
           </button>
@@ -355,7 +361,7 @@ const ChatPage: React.FC = () => {
             </>
           ) : (
             /* ========== MESSAGES (only this scrolls) ========== */
-            <div className="w-full max-w-3xl mx-auto flex-1 overflow-y-auto pr-2 space-y-6 no-scrollbar">
+            <div className="w-full max-w-3xl mx-auto flex-1 overflow-y-auto pr-2 space-y-6 no-scrollbar pb-40 md:pb-0">
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
@@ -431,7 +437,7 @@ const ChatPage: React.FC = () => {
                 }
               }}
               placeholder="Type your legal query (e.g., 'Is dowry illegal?')..."
-              className="w-full h-[56px] py-4 pl-6 pr-24 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#379AE6] text-lg placeholder:text-gray-400 bg-white resize-none no-scrollbar"
+              className="w-full h-[56px] py-4 pl-6 pr-24 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#379AE6] text-base md:text-lg placeholder:text-gray-400 bg-white resize-none no-scrollbar"
             />
 
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">

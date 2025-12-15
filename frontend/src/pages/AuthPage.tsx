@@ -99,18 +99,20 @@ export default function AuthPage() {
     "w-full h-[40px] px-3 pl-10 border border-[#DEE1E6] rounded-[6px] text-[14px] font-open-sans text-[#171A1F] placeholder-gray-400 focus:outline-none focus:border-[#2F8EFF] focus:ring-1 focus:ring-[#2F8EFF] bg-white transition-colors shadow-sm";
 
   return (
-    <div className="flex items-center justify-center min-h-screen w-full bg-[#D9ECFF] font-sans overflow-hidden py-4">
-      {/* === MAIN CONTAINER (Reduced Height to 700px) === */}
+    <div className="flex items-center justify-center min-h-screen w-full bg-[#D9ECFF] font-sans overflow-hidden py-4 px-4 md:px-0">
+      {/* === MAIN CONTAINER (Mobile: Auto Height, Desktop: 700px) === */}
       <div
-        className={`relative w-full max-w-[1000px] h-[700px] bg-white rounded-[40px] shadow-[0_5px_15px_rgba(0,0,0,0.35)] overflow-hidden mx-auto ${
+        className={`relative w-full max-w-[1000px] min-h-[600px] md:h-[700px] bg-white rounded-[20px] md:rounded-[40px] shadow-[0_5px_15px_rgba(0,0,0,0.2)] overflow-hidden mx-auto ${
           isSignUp ? "active" : ""
         }`}
         id="container"
       >
         {/* ================= SIGN UP FORM CONTAINER (Left, moves to Right) ================= */}
         <div
-          className={`absolute top-0 h-full transition-all duration-700 ease-in-out left-0 w-1/2 ${
-            isSignUp ? "translate-x-[100%] opacity-100 z-50" : "opacity-0 z-10"
+          className={`absolute top-0 h-full transition-all duration-700 ease-in-out left-0 w-full md:w-1/2 ${
+            isSignUp
+              ? "translate-x-0 md:translate-x-[100%] opacity-100 z-50 block"
+              : "opacity-0 z-0 hidden md:block" // Fix: z-0 to prevent clicking hidden form
           }`}
         >
           <form
@@ -281,8 +283,32 @@ export default function AuthPage() {
               </button>
             </div>
 
-            {/* ILLUSTRATION: Court Building (Scaled for 700px height) */}
-            <div className="absolute bottom-0 left-0 w-full flex justify-center z-0">
+            {/* COMBINED MOBILE BOTTOM: Image + Switch Text */}
+            <div className="md:hidden mt-auto w-full flex flex-col items-center z-10">
+              {/* Court Building (Mobile) */}
+              <div className="w-full flex justify-center overflow-hidden mb-[-20px]">
+                <img
+                  src="/assets/LP-supreme.png"
+                  alt="Court Illustration"
+                  className="w-[90%] max-w-[350px] object-contain opacity-95 relative top-[10px]"
+                />
+              </div>
+
+              {/* Switch to Login Text */}
+              <p className="text-sm text-gray-700 bg-white/80 backdrop-blur-sm px-4 py-1 rounded-full shadow-sm z-20">
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(false)}
+                  className="font-bold text-[#2563EB] hover:underline"
+                >
+                  Sign In
+                </button>
+              </p>
+            </div>
+
+            {/* ILLUSTRATION: Court Building (Scaled for 700px height) - Desktop Only */}
+            <div className="absolute bottom-0 left-0 w-full flex justify-center z-0 hidden md:flex">
               {/* IMAGE — free control */}
               <img
                 src="/assets/LP-supreme.png"
@@ -305,8 +331,8 @@ export default function AuthPage() {
 
         {/* ================= SIGN IN FORM CONTAINER (Left, Default Visible) ================= */}
         <div
-          className={`absolute top-0 h-full transition-all duration-700 ease-in-out left-0 w-1/2 z-20 ${
-            isSignUp ? "translate-x-[100%]" : ""
+          className={`absolute top-0 h-full transition-all duration-700 ease-in-out left-0 w-full md:w-1/2 z-20 ${
+            isSignUp ? "translate-x-[100%] hidden md:block" : "block"
           }`}
         >
           <form
@@ -401,8 +427,32 @@ export default function AuthPage() {
               </button>
             </div>
 
+            {/* COMBINED MOBILE BOTTOM: Image + Switch Text */}
+            <div className="md:hidden mt-auto w-full flex flex-col items-center z-10">
+              {/* Lady Justice (Mobile) */}
+              <div className="w-full flex justify-center overflow-hidden mb-[-10px]">
+                <img
+                  src="/assets/Login.png"
+                  alt="Legal Illustration"
+                  className="w-[80%] max-w-[300px] object-contain relative top-[5px]"
+                />
+              </div>
+
+              {/* Switch to Signup Text */}
+              <p className="text-sm text-gray-700 bg-white/80 backdrop-blur-sm px-4 py-1 rounded-full shadow-sm z-20">
+                New to LawGuide?{" "}
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(true)}
+                  className="font-bold text-[#2563EB] hover:underline"
+                >
+                  Sign Up
+                </button>
+              </p>
+            </div>
+
             {/* ILLUSTRATION: Lady Justice (Scaled for 700px height) */}
-            <div className="absolute bottom-0 left-0 w-full flex justify-center z-0">
+            <div className="absolute bottom-0 left-0 w-full flex justify-center z-0 hidden md:flex">
               <img
                 src="/assets/Login.png"
                 alt="Legal Illustration"
@@ -422,7 +472,7 @@ export default function AuthPage() {
 
         {/* ================= OVERLAY CONTAINER (Slides Left/Right) ================= */}
         <div
-          className={`absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-all duration-700 ease-in-out z-100 rounded-l-[100px] ${
+          className={`hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-all duration-700 ease-in-out z-100 rounded-l-[100px] ${
             isSignUp ? "-translate-x-full rounded-l-none rounded-r-[100px]" : ""
           }`}
         >
@@ -461,7 +511,8 @@ export default function AuthPage() {
                 New to LawGuide?
               </h1>
               <p className="font-open-sans text-[14px] mb-8 leading-6">
-                Create your account to explore laws, understand your rights, and get AI-powered legal guidance.
+                Create your account to explore laws, understand your rights, and
+                get AI-powered legal guidance.
               </p>
               <button
                 onClick={() => setIsSignUp(true)}

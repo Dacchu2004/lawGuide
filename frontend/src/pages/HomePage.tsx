@@ -197,7 +197,7 @@ const HomePage: React.FC = () => {
         <img
           src="/assets/D-hand.png" // your hand image
           alt=""
-          className="absolute pointer-events-none select-none"
+          className="absolute pointer-events-none select-none hidden md:block"
           style={{
             width: "260px", // resize here
             top: "40px", // move up/down
@@ -444,23 +444,18 @@ const HomePage: React.FC = () => {
           {/* TOP GRID */}
           <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-10 mb-10">
             {/* LOGO + DESCRIPTION */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 items-center md:items-start text-center md:text-left">
               {/* LOGO CONTAINER (layout-safe) */}
-              <div className="relative">
-                {/* LOGO — freely movable */}
+              <div className="relative flex justify-center md:block">
+                {/* LOGO — responsive positioning */}
                 <img
                   src="/assets/LP-logo.png"
                   alt="LawGuide India"
-                  className="absolute object-contain"
-                  style={{
-                    width: "140px", // ← CHANGE SIZE HERE
-                    top: "-40px", // ← move up/down
-                    left: "0px", // ← move left/right
-                  }}
+                  className="object-contain relative md:absolute w-[140px] md:-top-[40px] md:left-0"
                 />
 
-                {/* PLACEHOLDER — keeps layout intact */}
-                <div className="w-[140px] h-[56px] opacity-0"></div>
+                {/* PLACEHOLDER — layout intact on desktop */}
+                <div className="w-[140px] h-[56px] opacity-0 hidden md:block"></div>
               </div>
 
               {/* DESCRIPTION */}
@@ -471,7 +466,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* LEGAL RESOURCES */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 items-center md:items-start text-center md:text-left">
               <h3 className="font-archivo font-semibold text-[18px] text-[#171A1F]">
                 Legal Resources
               </h3>
@@ -488,7 +483,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* SERVICES */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 items-center md:items-start text-center md:text-left">
               <h3 className="font-archivo font-semibold text-[18px] text-[#171A1F]">
                 Services
               </h3>
@@ -507,7 +502,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* ABOUT */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 items-center md:items-start text-center md:text-left">
               <h3 className="font-archivo font-semibold text-[18px] text-[#171A1F]">
                 About Us
               </h3>
@@ -522,13 +517,13 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* CONTACT */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 items-center md:items-start text-center md:text-left">
               <h3 className="font-archivo font-semibold text-[18px] text-[#171A1F]">
                 Contact Us
               </h3>
 
               <div className="flex flex-col gap-3 text-[14px]">
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2 justify-center md:justify-start">
                   <MapPin size={16} className="text-[#323743] mt-0.5" />
                   <p className="text-[#323743] leading-tight">
                     123 Legal Avenue,
@@ -537,19 +532,19 @@ const HomePage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 justify-center md:justify-start">
                   <Phone size={16} className="text-[#323743]" />
                   <span className="text-[#323743]">+91 1800 123 4567</span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 justify-center md:justify-start">
                   <Mail size={16} className="text-[#323743]" />
                   <span className="text-[#323743]">info@lawguideindia.com</span>
                 </div>
               </div>
 
               {/* SOCIAL ICONS */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-2 justify-center md:justify-start">
                 <Facebook
                   size={18}
                   className="text-[#323743] hover:text-[#197DCA]"

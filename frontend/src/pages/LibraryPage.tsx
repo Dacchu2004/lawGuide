@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Search, FileText, Check, Sparkles } from "lucide-react";
+import {
+  Search,
+  FileText,
+  Check,
+  Sparkles,
+  Filter,
+  X,
+  ChevronLeft,
+} from "lucide-react";
 import { searchLibrary } from "../api/library";
 import { getAISummary } from "../api/ai";
 import type { LibrarySection } from "../api/library";
@@ -117,6 +125,10 @@ const LibraryPage: React.FC = () => {
   const [aiSummary, setAiSummary] = useState("");
   const [loadingAI, setLoadingAI] = useState(false);
 
+  // Mobile States
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [showMobileDetails, setShowMobileDetails] = useState(false);
+
   useEffect(() => {
     // Customize Acts Filter (Hardcoded as per user request)
     const IMPORTANT_ACTS = [
@@ -177,8 +189,17 @@ const LibraryPage: React.FC = () => {
     const q = qOverride !== undefined ? qOverride : searchQuery;
     const d = dOverride !== undefined ? dOverride : selectedDomain;
 
-    // FIX: If query and domain are empty, show defaults
-    if (!q.trim() && !d) {
+    // FIX: If query and domain are empty, we might still want to search if there are filters
+    // However, if EVERYTHING is empty (no query, no domain, no acts, no jurisdiction), show defaults.
+
+    const activeActs = Object.entries(filters)
+      .filter(([, checked]) => checked)
+      .map(([act]) => act);
+
+    const hasActiveFilters =
+      activeActs.length > 0 || !!d || !!selectedJurisdiction;
+
+    if (!q.trim() && !hasActiveFilters) {
       setResults(DEFAULT_LAWS);
       setSelectedResult(DEFAULT_LAWS[0]);
       setAiSummary("");
@@ -194,7 +215,7 @@ const LibraryPage: React.FC = () => {
 
       const data = await searchLibrary({
         query: q.trim(),
-        act: activeActs.length === 1 ? activeActs[0] : "",
+        act: activeActs.length >= 1 ? activeActs.join(",") : "",
         domain: d || "",
         jurisdiction: selectedJurisdiction || "",
       });
@@ -217,6 +238,9 @@ const LibraryPage: React.FC = () => {
       setResults(mapped);
       setSelectedResult(mapped.length ? mapped[0] : null);
       setAiSummary("");
+
+      // On mobile, if searching, maybe don't auto-select to show list first?
+      // Actually, standard behavior: don't auto-open details on mobile search
     } catch (err) {
       console.error("Search failed:", err);
       setResults([]);
@@ -244,10 +268,8 @@ const LibraryPage: React.FC = () => {
 
   useEffect(() => {
     // Only auto-search if filters change, NOT purely on text change (user must click search)
-    // But if domain changes via UI, we might want to auto-search
-    if (selectedDomain) {
-      handleSearch();
-    }
+    // We execute handleSearch() on any filter change, enabling "clear all filters" to revert results.
+    handleSearch();
   }, [selectedDomain, selectedJurisdiction, filters]);
 
   const fetchAISummary = async (section: UISection) => {
@@ -274,9 +296,25 @@ const LibraryPage: React.FC = () => {
   }, [selectedResult]);
 
   return (
-    <div className="h-full flex flex-col bg-[#F8F9FA] overflow-hidden">
-      {/* SEARCH BAR */}
-      <div className="h-[80px] bg-white border-b flex items-center justify-center px-6">
+    <div className="h-full flex flex-col bg-[#F8F9FA] overflow-hidden relative">
+      {/* MOBILE HEADER (If Details Open) */}
+      {showMobileDetails && selectedResult && (
+        <div className="md:hidden h-[60px] bg-white border-b flex items-center px-4 gap-3 z-50">
+          <button onClick={() => setShowMobileDetails(false)}>
+            <ChevronLeft size={24} className="text-gray-600" />
+          </button>
+          <span className="font-bold text-sm truncate">
+            {selectedResult.act}
+          </span>
+        </div>
+      )}
+
+      {/* SEARCH BAR (Hide on Mobile if Details Open) */}
+      <div
+        className={`h-[80px] bg-white border-b flex items-center justify-center px-6 ${
+          showMobileDetails ? "hidden md:flex" : "flex"
+        }`}
+      >
         <div className="w-full max-w-5xl flex gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -305,10 +343,24 @@ const LibraryPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3-PANE LAYOUT */}
-      <div className="flex-1 min-h-0 p-6 grid grid-cols-12 gap-6">
-        {/* LEFT FILTERS */}
-        <aside className="col-span-3 bg-[#DAECFA]/40 rounded-xl border p-5 overflow-y-auto no-scrollbar">
+      {/* 3-PANE LAYOUT - Mobile: Auto/1fr rows to push results to top. Desktop: standard columns */}
+      <div className="flex-1 min-h-0 p-4 md:p-6 grid grid-cols-1 grid-rows-[auto_1fr] md:grid-rows-none md:grid-cols-12 gap-6 relative">
+        {/* MOBILE FILTER BUTTON */}
+        <div
+          className={`md:hidden col-span-1 mb-2 ${
+            showMobileDetails ? "hidden" : "block"
+          }`}
+        >
+          <button
+            onClick={() => setIsFilterOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm font-medium shadow-sm"
+          >
+            <Filter size={16} /> Filters
+          </button>
+        </div>
+
+        {/* LEFT FILTERS (Desktop: Block, Mobile: Hidden default) */}
+        <aside className="hidden md:block col-span-3 bg-[#DAECFA]/40 rounded-xl border p-5 overflow-y-auto no-scrollbar">
           <h2 className="font-bold mb-4">Filters</h2>
 
           {acts.map((act) => (
@@ -374,12 +426,19 @@ const LibraryPage: React.FC = () => {
           </div>
         </aside>
 
-        {/* MIDDLE RESULTS (CRASH FIX ✅) */}
-        <section className="col-span-4 bg-white rounded-xl border overflow-y-auto no-scrollbar">
+        {/* MIDDLE RESULTS (Mobile: Full Width, Desktop: col-span-4) */}
+        <section
+          className={`bg-white rounded-xl border overflow-y-auto no-scrollbar ${
+            showMobileDetails ? "hidden md:block" : "col-span-1 md:col-span-4"
+          }`}
+        >
           {results.map((result) => (
             <div
               key={result.id || `${result.act}-${result.section}`}
-              onClick={() => setSelectedResult(result)}
+              onClick={() => {
+                setSelectedResult(result);
+                setShowMobileDetails(true); // Open details on mobile
+              }}
               className={`p-5 border-b cursor-pointer ${
                 selectedResult?.id === result.id
                   ? "border-[#258CF4] bg-blue-50"
@@ -413,9 +472,18 @@ const LibraryPage: React.FC = () => {
           )}
         </section>
 
-        {/* RIGHT DETAILS – UNCHANGED */}
-        <main className="col-span-5 bg-[#DAECFA]/30 rounded-xl border p-6 overflow-y-auto no-scrollbar">
-          {!selectedResult && <p>Select a result</p>}
+        {/* RIGHT DETAILS (Desktop: col-span-5, Mobile: Full Screen Overlay managed by state) */}
+        {/* On Desktop, we show this normally. On Mobile, we show it via showMobileDetails state logic below or CSS toggle */}
+        <main
+          className={`bg-[#DAECFA]/30 rounded-xl border p-6 overflow-y-auto no-scrollbar ${
+            showMobileDetails
+              ? "col-span-1 block absolute inset-0 z-40 bg-white m-0 rounded-none md:relative md:bg-[#DAECFA]/30 md:rounded-xl md:col-span-5 md:block md:z-auto"
+              : "hidden md:block md:col-span-5"
+          }`}
+        >
+          {!selectedResult && (
+            <p className="text-gray-500">Select a result to view details</p>
+          )}
 
           {selectedResult && (
             <>
@@ -469,6 +537,100 @@ const LibraryPage: React.FC = () => {
           )}
         </main>
       </div>
+
+      {/* MOBILE FILTERS DRAWER */}
+      {isFilterOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/50 md:hidden flex justify-end">
+          <div className="w-[80%] h-full bg-white p-5 animate-in slide-in-from-right duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="font-bold text-lg">Filters</h2>
+              <button onClick={() => setIsFilterOpen(false)}>
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto h-[calc(100%-60px)]">
+              {/* REPEATED FILTER LOGIC FOR MOBILE (Or we could componentize, but duplicate for safety/speed now) */}
+              <h3 className="font-bold text-sm mb-3 text-gray-700">Acts</h3>
+              {acts.map((act) => (
+                <label
+                  key={act}
+                  className="flex gap-3 text-sm mb-3 cursor-pointer"
+                >
+                  <div
+                    onClick={() => toggleAct(act)}
+                    className={`w-4 h-4 border flex items-center justify-center flex-shrink-0 ${
+                      filters[act]
+                        ? "bg-[#258CF4] border-[#258CF4]"
+                        : "bg-white"
+                    }`}
+                  >
+                    {filters[act] && <Check size={12} className="text-white" />}
+                  </div>
+                  {act}
+                </label>
+              ))}
+
+              <div className="mt-6">
+                <h3 className="font-bold text-sm mb-2">Domain</h3>
+                <div className="flex flex-wrap">
+                  {[
+                    "Criminal",
+                    "Property",
+                    "Cyber",
+                    "Family",
+                    "Consumer",
+                    "Labour",
+                    "Constitutional",
+                  ].map((d) => (
+                    <button
+                      key={d}
+                      onClick={() =>
+                        setSelectedDomain(selectedDomain === d ? undefined : d)
+                      }
+                      className={`px-3 py-1 text-xs rounded-full border mr-2 mb-2 ${
+                        selectedDomain === d
+                          ? "bg-[#258CF4] text-white"
+                          : "bg-white"
+                      }`}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <h3 className="font-bold text-sm mb-2">Jurisdiction</h3>
+                {["central", "state"].map((j) => (
+                  <button
+                    key={j}
+                    onClick={() =>
+                      setSelectedJurisdiction(
+                        selectedJurisdiction === j ? undefined : j
+                      )
+                    }
+                    className={`px-3 py-1 text-xs rounded-full border mr-2 ${
+                      selectedJurisdiction === j
+                        ? "bg-[#258CF4] text-white"
+                        : "bg-white"
+                    }`}
+                  >
+                    {j}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setIsFilterOpen(false)}
+                className="w-full mt-8 bg-[#258CF4] text-white py-3 rounded-lg font-bold"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

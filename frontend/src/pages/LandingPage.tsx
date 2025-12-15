@@ -4,6 +4,8 @@ import {
   Facebook,
   Linkedin,
   Youtube,
+  Menu,
+  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -19,6 +21,7 @@ const LandingPage = () => {
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [newsletterMsg, setNewsletterMsg] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleSubscribe = async () => {
     if (!newsletterEmail.includes("@")) {
@@ -55,12 +58,12 @@ const LandingPage = () => {
         <img
           src="/assets/LP-logo.png"
           alt="LawGuide India"
-          className="absolute left-[200px] top-[-30px] h-40 w-auto z-30"
+          className="absolute left-1/2 -translate-x-1/2 top-2 lg:left-[200px] lg:top-[-30px] lg:translate-x-0 h-32 lg:h-40 w-auto z-50"
         />
 
-        <div className="max-w-6xl mx-auto h-[70px] flex items-center justify-between px-6 relative">
+        <div className="max-w-6xl mx-auto h-[70px] flex items-center justify-between px-6 relative z-40">
           {/* LEFT placeholder (keeps menu centered because logo isn't in flex flow) */}
-          <div className="w-[160px]"></div>
+          <div className="w-[160px] hidden lg:block"></div>
 
           {/* ===== CENTER MENU ===== */}
           <div className="hidden lg:flex items-center gap-6 mx-auto">
@@ -95,39 +98,80 @@ const LandingPage = () => {
             )}
           </div>
 
-          {/* ===== RIGHT BUTTON ===== */}
+          {/* ===== RIGHT BUTTON (Desktop) ===== */}
           <button
             onClick={() => handleNavigation("/home")}
-            className="h-[38px] px-4 bg-[#379AE6] text-white text-[15px] rounded-[8px] hover:bg-[#197DCA]"
+            className="hidden lg:block h-[38px] px-4 bg-[#379AE6] text-white text-[15px] rounded-[8px] hover:bg-[#197DCA]"
           >
             Get started
           </button>
+
+          {/* ===== MOBILE MENU TOGGLE ===== */}
+          <div className="lg:hidden ml-auto">
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              {isMobileMenuOpen ? <X /> : <Menu />}
+            </button>
+          </div>
         </div>
+
+        {/* MOBILE MENU DRAWER */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden absolute top-[70px] left-0 w-full bg-white z-50 border-t shadow-xl p-6 flex flex-col gap-4 animate-in slide-in-from-top-2">
+            {["Rights Hub", "AI LegalGuide", "Laws", "Library"].map((item) => (
+              <button
+                key={item}
+                className="text-left py-2 font-medium"
+                onClick={() => {
+                  // Same logic as desktop
+                  const path =
+                    item === "Rights Hub"
+                      ? "/home/rights"
+                      : item === "AI LegalGuide"
+                      ? "/home/chat"
+                      : "/home/library";
+                  handleNavigation(path);
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                {item}
+              </button>
+            ))}
+            <button
+              onClick={() => {
+                handleNavigation("/home");
+                setIsMobileMenuOpen(false);
+              }}
+              className="h-[48px] w-full bg-[#379AE6] text-white text-[16px] rounded-[8px] font-bold mt-4"
+            >
+              Get Started
+            </button>
+          </div>
+        )}
       </nav>
 
       {/* ================= HERO SECTION ================= */}
       <section className="max-w-7xl mx-auto px-6 py-20 flex flex-col lg:flex-row items-center justify-between relative">
         {/* LEFT SIDE TEXT */}
-        <div className="lg:w-[55%] relative">
+        <div className="w-full lg:w-[55%] relative text-center lg:text-left">
           {/* Hammer Illustration */}
           <img
             src="/assets/LP-hand.png"
             className="absolute right-[-95px] top-[245px] w-[260px] hidden lg:block z-20"
           />
 
-          <h1 className="font-['Archivo'] text-[56px] leading-[66px] font-bold mb-7">
+          <h1 className="font-['Archivo'] text-[40px] lg:text-[56px] leading-[48px] lg:leading-[66px] font-bold mb-5 lg:mb-7">
             Simplify Indian Law. <br />
             Know Your Rights.
           </h1>
 
-          <p className="text-[18px] leading-[28px] text-[#565D6D] mb-12 max-w-lg">
+          <p className="text-[16px] lg:text-[18px] leading-[26px] lg:leading-[28px] text-[#565D6D] mb-8 lg:mb-12 max-w-lg mx-auto lg:mx-0">
             A Responsible AI platform that explains your rights and retrieves
             accurate legal sections from the Bharatiya Nyaya Sanhita (BNS) &
             more.
           </p>
 
           {/* CTA BUTTONS */}
-          <div className="flex gap-5">
+          <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
             <button
               onClick={() =>
                 handleNavigation("/home/chat", {
@@ -149,7 +193,7 @@ const LandingPage = () => {
         </div>
 
         {/* RIGHT SIDE VISUALS */}
-        <div className="lg:w-[45%] relative flex flex-col gap-8 items-start mt-20 lg:mt-0">
+        <div className="w-full lg:w-[45%] relative flex flex-col gap-6 lg:gap-8 items-center lg:items-start mt-16 lg:mt-0">
           {/* Curved BG Shape */}
           <img
             src="/assets/LP-BG.svg"
@@ -164,7 +208,7 @@ const LandingPage = () => {
           />
 
           {/* CARD 1 */}
-          <div className="w-[360px] bg-white rounded-[18px] shadow-lg p-3 flex h-[120px] z-30 ml-[80px]">
+          <div className="w-full max-w-[360px] bg-white rounded-[18px] shadow-lg p-3 flex h-[120px] z-30 lg:ml-[80px]">
             <img
               src="/assets/PD.jpg"
               className="h-full w-[160px] rounded-[10px] object-cover"
@@ -190,7 +234,7 @@ const LandingPage = () => {
           </div>
 
           {/* CARD 2 */}
-          <div className="w-[360px] bg-white rounded-[18px] shadow-lg p-3 flex h-[120px] ml-[80px] z-30">
+          <div className="w-full max-w-[360px] bg-white rounded-[18px] shadow-lg p-3 flex h-[120px] lg:ml-[80px] z-30">
             <img
               src="/assets/CS.jpg"
               className="h-full w-[160px] rounded-[10px] object-cover"
@@ -216,7 +260,7 @@ const LandingPage = () => {
           </div>
 
           {/* CARD 3 */}
-          <div className="w-[360px] bg-white rounded-[18px] shadow-lg p-3 flex h-[120px] z-30 ml-[80px]">
+          <div className="w-full max-w-[360px] bg-white rounded-[18px] shadow-lg p-3 flex h-[120px] z-30 lg:ml-[80px]">
             <img
               src="/assets/WS.jpg"
               className="h-full w-[160px] rounded-[10px] object-cover"
@@ -249,12 +293,12 @@ const LandingPage = () => {
           className="absolute left-[-70px] top-[-100px] w-[150px] hidden lg:block"
         />
 
-        <div className="bg-[#ACD5F5] rounded-[18px] p-8 pl-16 flex flex-col lg:flex-row gap-8 items-start relative">
+        <div className="bg-[#ACD5F5] rounded-[18px] p-6 lg:p-8 lg:pl-16 flex flex-col lg:flex-row gap-6 lg:gap-8 items-center lg:items-start relative text-center lg:text-left">
           <h2 className="font-['Archivo'] text-[24px] text-[#197DCA] whitespace-nowrap">
             Explore Laws:
           </h2>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3 lg:gap-4 justify-center lg:justify-start">
             {[
               "Police Rights",
               "Traffic Rules",
@@ -267,7 +311,7 @@ const LandingPage = () => {
                 onClick={() =>
                   handleNavigation("/home/library", { query: tag })
                 }
-                className="px-5 h-[42px] bg-white rounded-full text-[15px] shadow-sm hover:bg-[#E6F0FF]"
+                className="px-4 lg:px-5 h-[42px] bg-white rounded-full text-[14px] lg:text-[15px] shadow-sm hover:bg-[#E6F0FF]"
               >
                 {tag}
               </button>
@@ -280,8 +324,8 @@ const LandingPage = () => {
       <section className="w-full bg-[#D9ECFF] py-16 relative overflow-hidden">
         <div className="max-w-6xl mx-auto pl-4 pr-6 relative z-10">
           {/* ------- TITLE ------- */}
-          <div className="text-center mb-16 flex justify-center items-center gap-3">
-            <h2 className="font-['Archivo'] font-bold text-[50px] leading-tight text-black">
+          <div className="text-center mb-10 lg:mb-16 flex flex-col lg:flex-row justify-center items-center gap-3">
+            <h2 className="font-['Archivo'] font-bold text-[32px] lg:text-[50px] leading-tight text-black">
               Your Legal Journey, Simplified
             </h2>
 
@@ -313,7 +357,7 @@ const LandingPage = () => {
             ].map((card, i) => (
               <div
                 key={i}
-                className="w-[320px] h-[250px] bg-[#065998] rounded-[40px] shadow-sm flex flex-col items-center text-center p-6"
+                className="w-full max-w-[320px] h-auto lg:h-[250px] bg-[#065998] rounded-[40px] shadow-sm flex flex-col items-center text-center p-6"
               >
                 {/* ICON — SAME SIZE, NO BACKGROUND */}
                 <img
@@ -358,7 +402,7 @@ const LandingPage = () => {
 
       {/* ================= NEWSLETTER SECTION (WHITE BG) ================= */}
       {/* UPDATED: Background changed to WHITE, text to DARK BLUE */}
-      <section className="w-full bg-white py-16">
+      <section className="w-full bg-white py-8 md:py-16">
         <div className="max-w-6xl mx-auto pl-4 pr-6">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
             {/* Illustration */}
@@ -366,17 +410,26 @@ const LandingPage = () => {
               <img
                 src="/assets/LP-supreme.png"
                 alt="Subscribe"
-                className="absolute object-contain"
                 style={{
                   width: "520px",
                   top: "-30px",
                   left: "-50px",
                   transform: "scale(1.4)",
                 }}
+                className="absolute object-contain hidden lg:block"
               />
 
-              {/* Placeholder to hold layout */}
-              <div className="opacity-0 w-[520px] h-[300px]"></div>
+              {/* Placeholder to hold layout (hidden on mobile to prevent scroll) */}
+              <div className="opacity-0 w-[520px] h-[300px] hidden lg:block"></div>
+
+              {/* MOBILE ONLY IMAGE */}
+              <div className="lg:hidden w-full flex justify-center mb-2">
+                <img
+                  src="/assets/LP-supreme.png"
+                  alt="Subscribe"
+                  className="w-full max-w-[450px] object-contain"
+                />
+              </div>
             </div>
 
             {/* Content */}
@@ -389,14 +442,14 @@ const LandingPage = () => {
                 your inbox.
               </h2>
 
-              <div className="flex flex-col w-full max-w-[520px]">
+              <div className="flex flex-col w-full max-w-[520px] mt-6 lg:mt-0">
                 <div className="flex flex-col sm:flex-row gap-4 w-full">
                   <input
                     type="email"
                     placeholder="Enter your email address"
                     value={newsletterEmail}
                     onChange={(e) => setNewsletterEmail(e.target.value)}
-                    className="flex-1 h-[48px] px-4 rounded-[6px] bg-white border border-gray-300 text-[16px] focus:outline-none focus:ring-1 focus:ring-[#379AE6]"
+                    className="w-full flex-1 h-[48px] px-4 rounded-[6px] bg-white border border-gray-300 text-[16px] focus:outline-none focus:ring-1 focus:ring-[#379AE6]"
                   />
 
                   <button
@@ -431,11 +484,11 @@ const LandingPage = () => {
           {/* Top Row */}
           <div className="flex flex-col lg:flex-row items-start lg:items-start justify-between gap-12">
             {/* LOGO COLUMN */}
-            <div className="flex flex-col items-start gap-3 relative">
+            <div className="flex flex-col items-start gap-3 relative w-full lg:w-auto">
               <img
                 src="/assets/LP-logo.png"
                 alt="LawGuide India"
-                className="absolute object-contain"
+                className="static lg:absolute object-contain mx-auto lg:mx-0 mb-6 lg:mb-0"
                 style={{
                   width: "200px",
                   top: "-50px",
@@ -443,16 +496,16 @@ const LandingPage = () => {
                 }}
               />
 
-              <div className="w-[200px] h-[120px] opacity-0"></div>
+              <div className="w-[200px] h-[20px] lg:h-[120px] hidden lg:block opacity-0"></div>
 
-              <span className="font-['Archivo'] font-semibold text-[18px]">
+              <span className="font-['Archivo'] font-semibold text-[18px] text-center lg:text-left w-full">
                 © 2025 LawGuide India
               </span>
             </div>
 
             {/* CENTERED LINKS GRID */}
-            <div className="flex-1 flex justify-center">
-              <div className="grid grid-cols-3 gap-x-20 gap-y-6 text-[15px] font-['Inter']">
+            <div className="flex-1 w-full lg:w-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 lg:gap-x-20 lg:gap-y-6 text-[15px] font-['Inter'] text-center lg:text-left">
                 {/* Platform */}
                 <div className="flex flex-col gap-2">
                   <span className="font-semibold mb-1">Platform</span>
@@ -494,7 +547,7 @@ const LandingPage = () => {
             </div>
 
             {/* HELP CENTER + SOCIALS */}
-            <div className="flex flex-col gap-5 items-start">
+            <div className="flex flex-col gap-5 items-center lg:items-start w-full lg:w-auto">
               <button className="h-[48px] px-6 border border-[#171A1F] rounded-[6px] text-[16px] hover:bg-white">
                 Help Center
               </button>
