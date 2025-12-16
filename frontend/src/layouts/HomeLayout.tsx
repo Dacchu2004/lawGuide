@@ -38,6 +38,12 @@ export default function HomeLayout() {
         {/* CENTER (DESKTOP) */}
         <div className="hidden md:flex items-center gap-10">
           <button
+            onClick={() => navigate("/home")}
+            className="text-sm hover:opacity-90"
+          >
+            Home
+          </button>
+          <button
             onClick={() => navigate("/home/chat")}
             className="text-sm hover:opacity-90"
           >
@@ -186,6 +192,15 @@ export default function HomeLayout() {
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-[56px] left-0 w-full bg-[#197DCA] text-white z-40 shadow-xl flex flex-col p-6 animate-in slide-in-from-top-2 duration-200">
           <div className="flex flex-col gap-6 font-medium text-lg">
+            <button
+              onClick={() => {
+                navigate("/home");
+                setIsMobileMenuOpen(false);
+              }}
+              className="text-left hover:text-blue-100"
+            >
+              Home
+            </button>
             <button
               onClick={() => {
                 navigate("/home/chat");

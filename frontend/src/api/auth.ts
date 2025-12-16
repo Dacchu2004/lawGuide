@@ -49,3 +49,18 @@ export async function updateUserRequest(payload: UpdateProfilePayload): Promise<
   const res = await api.put("/auth/update", payload);
   return res.data;
 }
+
+// POST /auth/forgot-password
+export async function forgotPasswordRequest(email: string): Promise<void> {
+  await api.post("/auth/forgot-password", { email });
+}
+
+// POST /auth/verify-otp
+export async function verifyOtpRequest(email: string, otp: string): Promise<void> {
+  await api.post("/auth/verify-otp", { email, otp });
+}
+
+// POST /auth/reset-password
+export async function resetPasswordRequest(email: string, newPassword: string): Promise<void> {
+  await api.post("/auth/reset-password", { email, newPassword });
+}

@@ -5,6 +5,7 @@ import HomePage from "./pages/HomePage";
 import ChatPage from "./pages/ChatPage";
 import LibraryPage from "./pages/LibraryPage";
 import RightsPage from "./pages/RightsPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import HomeLayout from "./layouts/HomeLayout";
 
@@ -14,6 +15,7 @@ function App() {
       {/* ✅ Public routes */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/auth" element={<AuthPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
       {/* ✅ Protected layout: /home, /home/chat, /home/library */}
       <Route

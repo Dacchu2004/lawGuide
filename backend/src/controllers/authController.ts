@@ -122,3 +122,170 @@ export const updateProfile = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to update profile", error });
   }
 };
+
+// --- Password Reset Flow ---
+
+import nodemailer from 'nodemailer';
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    // 1. Check user (Always return success to prevent enumeration)
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      // Fake success
+      return res.json({ message: "If the email is registered, an OTP has been sent." });
+    }
+
+    // 2. Generate OTP (6 digits)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = await bcrypt.hash(otp, 10);
+
+    // 3. Clear old OTPs
+    await prisma.passwordResetOTP.deleteMany({ where: { userId: user.id } });
+
+    // 4. Store new OTP (Expires in 3 mins = 180s)
+    await prisma.passwordResetOTP.create({
+      data: {
+        userId: user.id,
+        otpHash,
+        expiresAt: new Date(Date.now() + 180 * 1000), 
+      },
+    });
+
+    // 5. Send Email (or Log in Dev)
+    const transporter = nodemailer.createTransport({
+      service: 'gmail', // or use env config
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'LawGuide India - Password Reset OTP',
+        text: `Your OTP for password reset is: ${otp}. It expires in 3 minutes.`,
+      });
+    } else {
+      console.log(`[DEV MODE] OTP for ${email}: ${otp}`);
+    }
+
+    return res.json({ message: "If the email is registered, an OTP has been sent." });
+
+
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+export const verifyOtp = async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ message: "Email and OTP required" });
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(400).json({ message: "Invalid Request" });
+
+    const record = await prisma.passwordResetOTP.findFirst({
+      where: { userId: user.id },
+    });
+
+    if (!record) return res.status(400).json({ message: "Invalid OTP" });
+
+    // 2. Check Expiry
+    if (new Date() > record.expiresAt) {
+        return res.status(400).json({ message: "OTP expired. Please resend." });
+    }
+
+    // 3. Check Attempts limit (Before verifying)
+    if (record.attempts >= record.maxAttempts) {
+        await prisma.passwordResetOTP.delete({ where: { id: record.id } });
+        return res.status(400).json({ message: "Too many attempts. Please resend OTP." });
+    }
+
+    // 4. Verify Hash
+    const isMatch = await bcrypt.compare(otp, record.otpHash);
+    if (!isMatch) {
+      // Increment attempts
+      const updatedRecord = await prisma.passwordResetOTP.update({
+        where: { id: record.id },
+        data: { attempts: { increment: 1 } },
+      });
+
+      // Check if limit hit AFTER increment
+      if (updatedRecord.attempts >= updatedRecord.maxAttempts) {
+        await prisma.passwordResetOTP.delete({ where: { id: record.id } });
+        return res.status(400).json({ message: "Too many attempts. Please resend OTP." });
+      }
+
+      return res.status(400).json({ message: `Invalid OTP. Attempts remaining: ${updatedRecord.maxAttempts - updatedRecord.attempts}` });
+    }
+
+    // 5. Success
+    await prisma.passwordResetOTP.update({
+      where: { id: record.id },
+      data: { verified: true },
+    });
+
+    return res.json({ message: "OTP verified successfully" });
+
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    return res.status(500).json({ message: "Verification failed" });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword) return res.status(400).json({ message: "Missing fields" });
+
+    // Validate Password Strength (Basic)
+    if (newPassword.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(400).json({ message: "Invalid Request" });
+
+    const record = await prisma.passwordResetOTP.findFirst({
+      where: { userId: user.id },
+    });
+
+    // CRITICAL: Ensure Verified
+    if (!record || !record.verified) {
+      return res.status(400).json({ message: "OTP verification required" });
+    }
+
+    // Check expiry for safety
+    if (new Date() > record.expiresAt) {
+        return res.status(400).json({ message: "OTP expired. Please start over." });
+    }
+
+    // Hash New Password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update User
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    // Delete OTP
+    await prisma.passwordResetOTP.delete({
+      where: { id: record.id },
+    });
+
+    return res.json({ message: "Password reset successful. Please log in." });
+
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    return res.status(500).json({ message: "Reset failed" });
+  }
+};

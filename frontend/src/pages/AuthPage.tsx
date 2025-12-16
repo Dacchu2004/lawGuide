@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, User, Mail, Lock, Languages, MapPin } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import useSound from "use-sound";
+// import useSound from "use-sound";
 import { useAuth } from "../context/AuthContext";
 import { loginRequest, signupRequest } from "../api/auth";
 
-const clickSfx = "/assets/key-click.wav";
+// const clickSfx = "/assets/key-click.wav";
 import SearchableDropdown from "../components/SearchableDropdown";
 
 export default function AuthPage() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [playClick] = useSound(clickSfx, { volume: 0.6 });
+  // const [playClick] = useSound(clickSfx, { volume: 0.6 });
 
   // ✅ Redirect if already logged in
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function AuthPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const handleKeyDown = () => {
-    playClick();
+    // playClick();
     setErrorMsg(null);
   };
 
@@ -413,6 +413,7 @@ export default function AuthPage() {
                 </label>
                 <button
                   type="button"
+                  onClick={() => navigate("/forgot-password")}
                   className="text-[#2F8EFF] hover:underline font-open-sans font-medium text-[13px]"
                 >
                   Forgot password?
