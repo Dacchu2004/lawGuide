@@ -1,19 +1,13 @@
 # services/chroma_loader.py
 import logging
-import chromadb
-from chromadb.config import Settings
-
 from config import CHROMA_DB_DIR
 from scripts.ingest import run_ingestion
+from services.embeddings import client  # 👈 REUSE EXISTING CLIENT
 
 logging.basicConfig(level=logging.INFO)
 
 def ensure_chroma_ready():
-    client = chromadb.PersistentClient(
-        path=CHROMA_DB_DIR,
-        settings=Settings(allow_reset=True)
-    )
-
+    # client is already initialized in embeddings.py
     collection = client.get_or_create_collection("legal_sections")
     count = collection.count()
 
