@@ -18,5 +18,5 @@ torch==2.2.2   # CPU handled via index above
 
 # === LANGUAGE PROCESSING ===
 deep-translator==1.11.4
-fasttext-wheel==0.9.2  # Pre-built wheel for Windows
+# fasttext-wheel==0.9.2  # Pre-built wheel for Windows
 langdetect==1.0.9

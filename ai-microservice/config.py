@@ -18,7 +18,8 @@ EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 RERANKER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 # 📍 ChromaDB config
-CHROMA_DB_DIR = "./chroma_db"
+CHROMA_DB_DIR = "/tmp/chroma"
+
 
 # 🧪 Confidence threshold for safe output
 CONFIDENCE_THRESHOLD = 0.75
