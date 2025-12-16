@@ -32,8 +32,16 @@ def retrieve_sections(query: str, state: str, top_k: int = 20):
                 {"state": state},
                 {"state": "India"}
             ]
-        } if state else None
+        } if state and state.lower() != "india" else None # Optimize: if state is India, no filter needed usually, or just don't filter
     )
+
+    # RETRY LOGIC: If no results found with filter, try WITHOUT filter (Broad Search)
+    if not results or not results["ids"] or not results["ids"][0]:
+        print(f"⚠ No strict results for state='{state}'. Retrying broad search...")
+        results = collection.query(
+            query_embeddings=[query_embedding],
+            n_results=top_k
+        )
 
     docs = []
     for doc_id, text, metadata in zip(
