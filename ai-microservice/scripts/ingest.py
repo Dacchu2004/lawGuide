@@ -136,14 +136,15 @@ def load_huggingface_acts(include_states=True):
     return docs
 
 
-def build_chroma_index(docs):
+def build_chroma_index(docs, client=None):
     logging.info("🚀 Creating vector embeddings...")
     model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
-    client = chromadb.PersistentClient(
-        path=CHROMA_DB_DIR,
-        settings=Settings(allow_reset=True)
-    )
+    if client is None:
+        client = chromadb.PersistentClient(
+            path=CHROMA_DB_DIR,
+            settings=Settings(allow_reset=True)
+        )
 
     collection = client.get_or_create_collection("legal_sections")
 
@@ -166,7 +167,7 @@ def build_chroma_index(docs):
 
 
 # 🔥 SAFE ENTRYPOINT
-def run_ingestion(skip_pdf=False, only_hf=False, central_only=False):
+def run_ingestion(skip_pdf=False, only_hf=False, central_only=False, client=None):
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     docs = []
 
@@ -181,7 +182,7 @@ def run_ingestion(skip_pdf=False, only_hf=False, central_only=False):
         logging.error("❌ No legal documents found. Aborting ingestion.")
         return
 
-    build_chroma_index(docs)
+    build_chroma_index(docs, client=client)
     logging.info("✅ Full ingestion complete (PDF + HuggingFace)")
 
 

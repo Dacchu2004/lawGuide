@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 def ensure_chroma_ready():
     client = chromadb.PersistentClient(
         path=CHROMA_DB_DIR,
-        settings=Settings(allow_reset=False)
+        settings=Settings(allow_reset=True)
     )
 
     collection = client.get_or_create_collection("legal_sections")
@@ -24,4 +24,4 @@ def ensure_chroma_ready():
         return
 
     logging.warning("⚠ Chroma empty — starting FULL ingestion")
-    run_ingestion()
+    run_ingestion(client=client)
