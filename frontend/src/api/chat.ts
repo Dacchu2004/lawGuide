@@ -1,9 +1,10 @@
 // frontend/src/api/chat.ts
 import api from "./client";
-import axios from "axios"; 
+ 
 
 // Access API_URL from environment or default
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000";
+// Access API_URL from environment or default
+// const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000";
 
 // This type is used in the frontend UI and also can be sent to backend if needed
 export interface ChatMessage {

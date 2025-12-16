@@ -67,35 +67,33 @@ const LandingPage = () => {
 
           {/* ===== CENTER MENU ===== */}
           <div className="hidden lg:flex items-center gap-6 mx-auto">
-            {["Rights Hub", "AI LegalGuide", "Laws", "Library"].map(
-              (item, index) => {
-                const getPath = (name: string) => {
-                  switch (name) {
-                    case "Rights Hub":
-                      return "/home/rights";
-                    case "AI LegalGuide":
-                      return "/home/chat";
-                    case "Laws":
-                      return "/home/library";
-                    case "Library":
-                      return "/home/library";
-                    default:
-                      return "/home";
-                  }
-                };
+            {["Rights Hub", "AI LegalGuide", "Laws", "Library"].map((item) => {
+              const getPath = (name: string) => {
+                switch (name) {
+                  case "Rights Hub":
+                    return "/home/rights";
+                  case "AI LegalGuide":
+                    return "/home/chat";
+                  case "Laws":
+                    return "/home/library";
+                  case "Library":
+                    return "/home/library";
+                  default:
+                    return "/home";
+                }
+              };
 
-                return (
-                  <div
-                    key={item}
-                    onClick={() => handleNavigation(getPath(item))}
-                    className="text-[16px] flex items-center cursor-pointer hover:text-[#379AE6]"
-                  >
-                    {item}
-                    {/* {index === 0 && <ChevronDown className="w-4 h-4 ml-1" />} */}
-                  </div>
-                );
-              }
-            )}
+              return (
+                <div
+                  key={item}
+                  onClick={() => handleNavigation(getPath(item))}
+                  className="text-[16px] flex items-center cursor-pointer hover:text-[#379AE6]"
+                >
+                  {item}
+                  {/* {index === 0 && <ChevronDown className="w-4 h-4 ml-1" />} */}
+                </div>
+              );
+            })}
           </div>
 
           {/* ===== RIGHT BUTTON (Desktop) ===== */}
