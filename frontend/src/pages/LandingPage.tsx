@@ -1,5 +1,5 @@
 import {
-  ChevronDown,
+  // ChevronDown,
   Twitter,
   Facebook,
   Linkedin,
@@ -91,7 +91,7 @@ const LandingPage = () => {
                     className="text-[16px] flex items-center cursor-pointer hover:text-[#379AE6]"
                   >
                     {item}
-                    {index === 0 && <ChevronDown className="w-4 h-4 ml-1" />}
+                    {/* {index === 0 && <ChevronDown className="w-4 h-4 ml-1" />} */}
                   </div>
                 );
               }
