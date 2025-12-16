@@ -16,7 +16,7 @@ function cleanText(text: string) {
 async function main() {
   console.log("🧹 Starting LegalSection cleanup...");
 
-  const batchSize = 500;
+  const batchSize = 100;
   let skip = 0;
   let totalChecked = 0;
   let totalUpdated = 0;

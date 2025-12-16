@@ -8,36 +8,33 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  state     String    // default preferred state (required)
-  language  String   // default preferred language (required)
-  username String
-  createdAt DateTime @default(now())
-  
-  queries   Query[]   // user query history
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  password     String
+  state        String
+  language     String
+  username     String
+  createdAt    DateTime      @default(now())
   chatSessions ChatSession[]
+  queries      Query[]
 }
 
 model ChatSession {
-  id        Int      @id @default(autoincrement())
+  id        Int           @id @default(autoincrement())
   userId    Int
-  title     String   @default("New Chat")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  User      User     @relation(fields: [userId], references: [id])
+  title     String        @default("New Chat")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
   messages  ChatMessage[]
+  User      User          @relation(fields: [userId], references: [id])
 }
 
 model ChatMessage {
-  id        Int      @id @default(autoincrement())
+  id        Int         @id @default(autoincrement())
   sessionId Int
-  role      String   // "user" or "assistant"
+  role      String
   content   String
-  createdAt DateTime @default(now())
-
+  createdAt DateTime    @default(now())
   Session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
 
@@ -45,26 +42,24 @@ model Query {
   id         Int      @id @default(autoincrement())
   userId     Int
   queryText  String
-  state      String?   // optional override (defaults to User.state)
-  language   String?   // optional override (defaults to User.language)
+  state      String?
+  language   String?
   status     String
   confidence Float?
   aiResponse String?
   timestamp  DateTime @default(now())
-
   User       User     @relation(fields: [userId], references: [id])
 }
 
 model LegalSection {
-  id           String   @id             // same ID as used in Chroma docs
+  id           String   @id
   act          String
   section      String
   text         String
-  jurisdiction String?                  // "central" or "state"
-  state        String?                  // e.g., "India"
-  domain       String?                  // e.g., "crime", "property" (we'll fill later)
+  jurisdiction String?
+  state        String?
+  domain       String?
   sourceLink   String?  @map("source_link")
-
   createdAt    DateTime @default(now())
 
   @@index([act])
@@ -72,7 +67,7 @@ model LegalSection {
   @@index([domain])
 }
 
-  model SectionSummary {
+model SectionSummary {
   id        Int      @id @default(autoincrement())
   hash      String   @unique
   summary   String
@@ -86,14 +81,14 @@ model NewsletterSubscriber {
 }
 
 model PasswordResetOTP {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  otpHash   String
-  expiresAt DateTime
-  attempts  Int      @default(0)
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  otpHash     String
+  expiresAt   DateTime
+  attempts    Int      @default(0)
+  verified    Boolean  @default(false)
+  createdAt   DateTime @default(now())
   maxAttempts Int      @default(3)
-  verified  Boolean  @default(false)
-  createdAt DateTime @default(now())
 
   @@index([userId])
 }

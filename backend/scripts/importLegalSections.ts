@@ -30,35 +30,43 @@ async function main() {
 
   console.log(`🚀 Importing ${docs.length} sections into PostgreSQL...`);
 
+  const BATCH_SIZE = 100;
   let count = 0;
-  for (const doc of docs) {
-    await prisma.legalSection.upsert({
-      where: { id: doc.id },
-      update: {
-        act: doc.act,
-        section: doc.section,
-        text: doc.text,
-        jurisdiction: doc.jurisdiction ?? "central",
-        state: doc.state ?? "India",
-        sourceLink: doc.source_link ?? null,
-        domain: doc.domain ?? null,
-      },
-      create: {
-        id: doc.id,
-        act: doc.act,
-        section: doc.section,
-        text: doc.text,
-        jurisdiction: doc.jurisdiction ?? "central",
-        state: doc.state ?? "India",
-        sourceLink: doc.source_link ?? null,
-        domain: doc.domain ?? null,
-      },
-    });
 
-    count++;
-    if (count % 500 == 0) {
-      console.log(`... ${count} sections imported`);
-    }
+  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+    const batch = docs.slice(i, i + BATCH_SIZE);
+    
+    // Create an array of upsert operations (promises)
+    const upserts = batch.map((doc) =>
+      prisma.legalSection.upsert({
+        where: { id: doc.id },
+        update: {
+          act: doc.act,
+          section: doc.section,
+          text: doc.text,
+          jurisdiction: doc.jurisdiction ?? "central",
+          state: doc.state ?? "India",
+          sourceLink: doc.source_link ?? null,
+          domain: doc.domain ?? null,
+        },
+        create: {
+          id: doc.id,
+          act: doc.act,
+          section: doc.section,
+          text: doc.text,
+          jurisdiction: doc.jurisdiction ?? "central",
+          state: doc.state ?? "India",
+          sourceLink: doc.source_link ?? null,
+          domain: doc.domain ?? null,
+        },
+      })
+    );
+
+    // Execute the batch in a transaction
+    await prisma.$transaction(upserts);
+
+    count += batch.length;
+    console.log(`... ${count} sections imported`);
   }
 
   console.log(`✅ Done. Imported/updated ${count} sections.`);
