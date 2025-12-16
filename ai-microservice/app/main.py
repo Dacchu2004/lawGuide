@@ -35,6 +35,10 @@ app.add_middleware(
 )
 # ======================= ✅✅✅ END CORS =======================
 
+# ======================= ✅ ROOT =======================
+@app.get("/")
+def root():
+    return {"message": "AI service running 🚀"}
 
 # ======================= ✅ HEALTH =======================
 @app.get("/health")
