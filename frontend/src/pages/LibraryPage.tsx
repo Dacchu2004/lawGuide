@@ -429,7 +429,9 @@ const LibraryPage: React.FC = () => {
         {/* MIDDLE RESULTS (Mobile: Full Width, Desktop: col-span-4) */}
         <section
           className={`bg-white rounded-xl border overflow-y-auto no-scrollbar ${
-            showMobileDetails ? "hidden md:block" : "col-span-1 md:col-span-4"
+            showMobileDetails
+              ? "hidden md:block md:col-span-4"
+              : "col-span-1 md:col-span-4"
           }`}
         >
           {results.map((result) => (
