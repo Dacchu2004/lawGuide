@@ -173,7 +173,9 @@ def run_ingestion(skip_pdf=False, only_hf=False, central_only=False):
     if not only_hf and not skip_pdf:
         docs.extend(load_manual_pdfs(base_dir))
 
-    docs.extend(load_huggingface_acts(include_states=not central_only))
+    # ⚠ RENDER OOM FIX: Commented out to prevent crash on free tier (512MB limit)
+    # Uncomment this when upgrading servers or running locally
+    # docs.extend(load_huggingface_acts(include_states=not central_only))
 
     if not docs:
         logging.error("❌ No legal documents found. Aborting ingestion.")
