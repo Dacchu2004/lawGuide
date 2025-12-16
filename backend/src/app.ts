@@ -21,6 +21,12 @@ app.get('/', (req, res) => {
   res.send('Backend running 🚀');
 });
 
+// Health check
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+
 // Test database connection route
 app.get('/test-db', async (req, res) => {
   try {
