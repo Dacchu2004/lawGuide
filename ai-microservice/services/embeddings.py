@@ -23,6 +23,8 @@ def retrieve_sections(query: str, state: str, top_k: int = 20):
         return []
 
     query_embedding = embedding_model.encode([query]).tolist()[0]
+    print("Chroma count:", collection.count())
+
 
     results = collection.query(
         query_embeddings=[query_embedding],
