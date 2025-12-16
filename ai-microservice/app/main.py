@@ -1,5 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from services.chroma_loader import ensure_chroma_ready
+
+app = FastAPI(title="LawGuide India - AI Microservice")
+
+# 🔥 RUN ON STARTUP
+ensure_chroma_ready()
+
 
 # ======================= SCHEMAS =======================
 from schemas.request import (
