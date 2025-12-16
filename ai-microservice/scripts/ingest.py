@@ -1,7 +1,7 @@
+# scripts/ingest.py
 import os
-import json   # 🆕 REQUIRED FOR EXPORT
+import json
 import re
-import argparse
 import logging
 import uuid
 from typing import List, Dict, Any
@@ -28,7 +28,6 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 # ================= Helper =================
 def make_unique_id(prefix: str) -> str:
-    """Generate a unique ID based on prefix and uuid4."""
     return f"{prefix}_{uuid.uuid4().hex}"
 
 
@@ -61,7 +60,7 @@ def extract_pdf_sections(pdf_path, act_name, jurisdiction, state):
     for page in reader.pages:
         try:
             full_text += page.extract_text() + "\n"
-        except:
+        except Exception:
             continue
 
     sections = re.findall(
@@ -69,6 +68,7 @@ def extract_pdf_sections(pdf_path, act_name, jurisdiction, state):
         full_text,
         flags=re.DOTALL | re.MULTILINE
     )
+
     logging.info(f"📝 Extracted {len(sections)} sections from {act_name}")
 
     docs = []
@@ -82,8 +82,8 @@ def extract_pdf_sections(pdf_path, act_name, jurisdiction, state):
 
 def load_manual_pdfs(base_dir):
     logging.info("📥 Loading BNS & BNSS PDFs")
-    data_dir = os.path.join(base_dir, "data")
     docs = []
+    data_dir = os.path.join(base_dir, "data")
 
     pdf_files = [
         ("BNS_2023.pdf", "Bharatiya Nyaya Sanhita 2023"),
@@ -100,7 +100,6 @@ def load_manual_pdfs(base_dir):
     return docs
 
 
-# ===== Hugging Face Dataset Ingestion =====
 def load_huggingface_acts(include_states=True):
     if not load_dataset:
         logging.warning("datasets not installed. Skipping HuggingFace ingestion.")
@@ -108,102 +107,94 @@ def load_huggingface_acts(include_states=True):
 
     logging.info("🌐 Loading HuggingFace dataset: geekyrakshit/Indian-Legal-Acts")
 
-    try:
-        ds = load_dataset("geekyrakshit/Indian-Legal-Acts")
-    except Exception as e:
-        logging.error(f"❌ Failed to download dataset: {e}")
-        return []
-
+    ds = load_dataset("geekyrakshit/Indian-Legal-Acts")
     docs = []
+
     selected_splits = list(ds.keys()) if include_states else ["central"]
 
     for split in selected_splits:
         for i, row in enumerate(ds[split]):
-            act = row.get("Short Title") or "Unknown Act"
-            section = row.get("Act Number") or f"Act_{i}"
             text = row.get("Markdown") or ""
-            source_link = row.get("View") or ""
-            entity = row.get("Entity") or "central"
-
             if not text.strip():
                 continue
 
-            doc_id = make_unique_id(f"{split}_{act.replace(' ', '_')}")
+            act = row.get("Short Title") or "Unknown Act"
+            section = row.get("Act Number") or f"Act_{i}"
+            entity = row.get("Entity") or "central"
+
             docs.append(make_doc(
-                doc_id=doc_id,
-                act=act,
-                section=str(section),
-                text=text,
-                jurisdiction="central" if entity.lower() == "central" else "state",
-                state=entity.replace("_", " ").title(),
-                source_link=source_link
+                make_unique_id(split),
+                act,
+                str(section),
+                text,
+                "central" if entity.lower() == "central" else "state",
+                entity.replace("_", " ").title(),
+                row.get("View") or ""
             ))
 
-    logging.info(f"📚 Successfully mapped {len(docs)} acts from HuggingFace")
+    logging.info(f"📚 Loaded {len(docs)} sections from HuggingFace")
     return docs
 
 
-# ===== Build ChromaDB Index =====
 def build_chroma_index(docs):
     logging.info("🚀 Creating vector embeddings...")
     model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
-    client = chromadb.PersistentClient(path=CHROMA_DB_DIR, settings=Settings(allow_reset=True))
+    client = chromadb.PersistentClient(
+        path=CHROMA_DB_DIR,
+        settings=Settings(allow_reset=True)
+    )
+
     collection = client.get_or_create_collection("legal_sections")
 
     texts = [d["text"] for d in docs]
     ids = [d["id"] for d in docs]
-
-    assert len(ids) == len(set(ids)), "❌ Duplicate IDs found — uniqueness check failed"
 
     embeddings = model.encode(texts, batch_size=32, show_progress_bar=True).tolist()
 
     collection.upsert(
         ids=ids,
         documents=texts,
-        metadatas=[{k: d[k] for k in ["act", "section", "jurisdiction", "state", "source_link"]} for d in docs],
+        metadatas=[
+            {k: d[k] for k in ["act", "section", "jurisdiction", "state", "source_link"]}
+            for d in docs
+        ],
         embeddings=embeddings
     )
 
-    logging.info("🎉 Chroma Index Built Successfully!")
+    logging.info("🎉 Chroma index built successfully")
 
 
-# ================= MAIN =================
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--skip-pdf", action="store_true", help="Skip BNS/BNSS PDF extraction")
-    parser.add_argument("--only-hf", action="store_true", help="Only ingest HuggingFace dataset")
-    parser.add_argument("--central-only", action="store_true", help="Ignore state acts")
-    args = parser.parse_args()
-
+# 🔥 SAFE ENTRYPOINT
+def run_ingestion(skip_pdf=False, only_hf=False, central_only=False):
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     docs = []
 
-    if not args.only_hf:
-        if not args.skip_pdf:
-            docs.extend(load_manual_pdfs(base_dir))
-        else:
-            logging.info("⏭ Skipping PDF ingestion")
+    if not only_hf and not skip_pdf:
+        docs.extend(load_manual_pdfs(base_dir))
 
-    docs.extend(load_huggingface_acts(include_states=not args.central_only))
+    docs.extend(load_huggingface_acts(include_states=not central_only))
 
     if not docs:
-        logging.error("❌ No documents found. Aborting.")
+        logging.error("❌ No legal documents found. Aborting ingestion.")
         return
 
-    # 🆕 JSON Export
-    data_dir = os.path.join(base_dir, "data")
-    os.makedirs(data_dir, exist_ok=True)
-
-    out_path = os.path.join(data_dir, "legal_sections.json")
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(docs, f, ensure_ascii=False, indent=2)
-
-    logging.info(f"💾 Exported {len(docs)} sections to {out_path}")
-
-    # Existing step
     build_chroma_index(docs)
+    logging.info("✅ Full ingestion complete (PDF + HuggingFace)")
 
 
+# CLI SUPPORT
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--skip-pdf", action="store_true")
+    parser.add_argument("--only-hf", action="store_true")
+    parser.add_argument("--central-only", action="store_true")
+    args = parser.parse_args()
+
+    run_ingestion(
+        skip_pdf=args.skip_pdf,
+        only_hf=args.only_hf,
+        central_only=args.central_only,
+    )
