@@ -3,11 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="LawGuide India - AI Microservice")
 
-@app.on_event("startup")
-def startup_event():
-    from services.chroma_loader import ensure_chroma_ready
-    ensure_chroma_ready()
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

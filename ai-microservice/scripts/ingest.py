@@ -1,16 +1,25 @@
 # scripts/ingest.py
+import sys
 import os
-import json
 import re
 import logging
 import uuid
 from typing import List, Dict, Any
 
+# --------------------------------------------------
+# Make project root importable
+# --------------------------------------------------
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+# --------------------------------------------------
+# Core imports
+# --------------------------------------------------
 from sentence_transformers import SentenceTransformer
 import chromadb
-from chromadb.config import Settings
 
-from config import EMBEDDING_MODEL_NAME, CHROMA_DB_DIR
+from config import EMBEDDING_MODEL_NAME
 
 # Optional dependencies
 try:
@@ -25,14 +34,48 @@ except ImportError:
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
+# ==================================================
+# Chroma Cloud Client (CORRECT FOR chromadb==1.3.5)
+# ==================================================
+def get_chroma_cloud_client() -> chromadb.HttpClient:
+    host = os.getenv("CHROMA_HOST")
+    api_key = os.getenv("CHROMA_API_KEY")
+    tenant = os.getenv("CHROMA_TENANT")
+    database = os.getenv("CHROMA_DATABASE")
 
-# ================= Helper =================
+    if not all([host, api_key, tenant, database]):
+        raise RuntimeError(
+            "❌ Missing Chroma Cloud env vars "
+            "(CHROMA_HOST, CHROMA_API_KEY, CHROMA_TENANT, CHROMA_DATABASE)"
+        )
+
+    return chromadb.HttpClient(
+        host=host,
+        port=443,
+        ssl=True,
+        headers={
+            "Authorization": f"Bearer {api_key}"
+        },
+        tenant=tenant,
+        database=database,
+    )
+
+# ==================================================
+# Helpers
+# ==================================================
 def make_unique_id(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex}"
 
 
-def make_doc(doc_id: str, act: str, section: str, text: str,
-             jurisdiction="central", state="India", source_link=""):
+def make_doc(
+    doc_id: str,
+    act: str,
+    section: str,
+    text: str,
+    jurisdiction: str = "central",
+    state: str = "India",
+    source_link: str = "",
+) -> Dict[str, Any]:
     return {
         "id": doc_id,
         "act": act,
@@ -43,9 +86,10 @@ def make_doc(doc_id: str, act: str, section: str, text: str,
         "source_link": source_link,
     }
 
-
-# ===== PDF Extraction =====
-def extract_pdf_sections(pdf_path, act_name, jurisdiction, state):
+# ==================================================
+# PDF Extraction
+# ==================================================
+def extract_pdf_sections(pdf_path: str, act_name: str, jurisdiction: str, state: str):
     if not PdfReader:
         logging.warning("pypdf not installed. Skipping PDF extraction.")
         return []
@@ -59,28 +103,36 @@ def extract_pdf_sections(pdf_path, act_name, jurisdiction, state):
     full_text = ""
     for page in reader.pages:
         try:
-            full_text += page.extract_text() + "\n"
+            text = page.extract_text()
+            if text:
+                full_text += text + "\n"
         except Exception:
             continue
 
     sections = re.findall(
         r"(?:Section\s*)?(\d+[A-Z]?)[\.\-:\)]\s*(.*?)(?=(?:Section\s*\d+[A-Z]?|^\d+[A-Z]?[\.\-:\)]|\Z))",
         full_text,
-        flags=re.DOTALL | re.MULTILINE
+        flags=re.DOTALL | re.MULTILINE,
     )
 
     logging.info(f"📝 Extracted {len(sections)} sections from {act_name}")
 
     docs = []
     for sec_num, sec_text in sections:
-        section_name = f"Section {sec_num}"
-        doc_id = make_unique_id(act_name.replace(" ", "_").lower())
-        docs.append(make_doc(doc_id, act_name, section_name, sec_text, jurisdiction, state))
+        docs.append(
+            make_doc(
+                doc_id=make_unique_id(act_name.replace(" ", "_").lower()),
+                act=act_name,
+                section=f"Section {sec_num}",
+                text=sec_text,
+                jurisdiction=jurisdiction,
+                state=state,
+            )
+        )
 
     return docs
 
-
-def load_manual_pdfs(base_dir):
+def load_manual_pdfs(base_dir: str):
     logging.info("📥 Loading BNS & BNSS PDFs")
     docs = []
     data_dir = os.path.join(base_dir, "data")
@@ -99,94 +151,101 @@ def load_manual_pdfs(base_dir):
 
     return docs
 
-
-def load_huggingface_acts(include_states=True):
+# ==================================================
+# HuggingFace Ingestion
+# ==================================================
+def load_huggingface_acts(include_states: bool = True):
     if not load_dataset:
         logging.warning("datasets not installed. Skipping HuggingFace ingestion.")
         return []
 
     logging.info("🌐 Loading HuggingFace dataset: geekyrakshit/Indian-Legal-Acts")
-
     ds = load_dataset("geekyrakshit/Indian-Legal-Acts")
-    docs = []
 
+    docs = []
     selected_splits = list(ds.keys()) if include_states else ["central"]
 
     for split in selected_splits:
         for i, row in enumerate(ds[split]):
-            text = row.get("Markdown") or ""
-            if not text.strip():
+            text = (row.get("Markdown") or "").strip()
+            if not text:
                 continue
 
-            act = row.get("Short Title") or "Unknown Act"
-            section = row.get("Act Number") or f"Act_{i}"
-            entity = row.get("Entity") or "central"
-
-            docs.append(make_doc(
-                make_unique_id(split),
-                act,
-                str(section),
-                text,
-                "central" if entity.lower() == "central" else "state",
-                entity.replace("_", " ").title(),
-                row.get("View") or ""
-            ))
+            docs.append(
+                make_doc(
+                    doc_id=make_unique_id(split),
+                    act=row.get("Short Title") or "Unknown Act",
+                    section=str(row.get("Act Number") or f"Act_{i}"),
+                    text=text,
+                    jurisdiction="central",
+                    state=(row.get("Entity") or "India").replace("_", " ").title(),
+                    source_link=row.get("View") or "",
+                )
+            )
 
     logging.info(f"📚 Loaded {len(docs)} sections from HuggingFace")
     return docs
 
-
-def build_chroma_index(docs, client=None):
+# ==================================================
+# Chroma Index Builder (CLOUD)
+# ==================================================
+def build_chroma_index(docs: List[Dict[str, Any]]):
     logging.info("🚀 Creating vector embeddings...")
     model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
-    if client is None:
-        client = chromadb.PersistentClient(
-            path=CHROMA_DB_DIR,
-            settings=Settings(allow_reset=True)
-        )
-
+    client = get_chroma_cloud_client()
     collection = client.get_or_create_collection("legal_sections")
 
     texts = [d["text"] for d in docs]
     ids = [d["id"] for d in docs]
+    metadatas = [
+        {
+            "act": d["act"],
+            "section": d["section"],
+            "jurisdiction": d["jurisdiction"],
+            "state": d["state"],
+            "source_link": d["source_link"],
+        }
+        for d in docs
+    ]
 
-    embeddings = model.encode(texts, batch_size=32, show_progress_bar=True).tolist()
+    embeddings = model.encode(
+        texts,
+        batch_size=16,
+        show_progress_bar=True,
+    ).tolist()
 
     collection.upsert(
         ids=ids,
         documents=texts,
-        metadatas=[
-            {k: d[k] for k in ["act", "section", "jurisdiction", "state", "source_link"]}
-            for d in docs
-        ],
-        embeddings=embeddings
+        metadatas=metadatas,
+        embeddings=embeddings,
     )
 
-    logging.info("🎉 Chroma index built successfully")
+    logging.info("🎉 Chroma Cloud index built successfully")
 
-
-# 🔥 SAFE ENTRYPOINT
-def run_ingestion(skip_pdf=False, only_hf=False, central_only=False, client=None):
+# ==================================================
+# Entry Point
+# ==================================================
+def run_ingestion(skip_pdf=False, only_hf=False, central_only=False):
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    docs = []
+    docs: List[Dict[str, Any]] = []
 
     if not only_hf and not skip_pdf:
         docs.extend(load_manual_pdfs(base_dir))
 
-    # ⚠ RENDER OOM FIX: Commented out to prevent crash on free tier (512MB limit)
-    # Uncomment this when upgrading servers or running locally
-    # docs.extend(load_huggingface_acts(include_states=not central_only))
+    docs.extend(load_huggingface_acts(include_states=not central_only))
 
     if not docs:
         logging.error("❌ No legal documents found. Aborting ingestion.")
         return
 
-    build_chroma_index(docs, client=client)
-    logging.info("✅ Full ingestion complete (PDF + HuggingFace)")
+    build_chroma_index(docs)
+    logging.info("✅ Full ingestion complete (uploaded to Chroma Cloud)")
 
-
-# CLI SUPPORT
+# ==================================================
+# CLI
+# ==================================================
 if __name__ == "__main__":
     import argparse
 

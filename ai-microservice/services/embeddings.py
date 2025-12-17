@@ -1,16 +1,36 @@
+import os
 import chromadb
 from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
-from config import CHROMA_DB_DIR, EMBEDDING_MODEL_NAME
 
-# Load client & embedding model once (best practice)
-client = chromadb.PersistentClient(
-    path=CHROMA_DB_DIR,
-    settings=Settings(allow_reset=False)
+CHROMA_HOST = os.getenv("CHROMA_HOST")
+CHROMA_API_KEY = os.getenv("CHROMA_API_KEY")
+CHROMA_TENANT = os.getenv("CHROMA_TENANT")
+CHROMA_DATABASE = os.getenv("CHROMA_DATABASE")
+
+if not all([CHROMA_HOST, CHROMA_API_KEY, CHROMA_TENANT, CHROMA_DATABASE]):
+    raise RuntimeError("❌ Chroma Cloud environment variables missing")
+
+client = chromadb.Client(
+    Settings(
+        chroma_api_impl="rest",
+        chroma_server_host=CHROMA_HOST,
+        chroma_server_http_port=443,
+        chroma_server_ssl_enabled=True,
+        chroma_server_headers={
+            "Authorization": f"Bearer {CHROMA_API_KEY}"
+        },
+        tenant=CHROMA_TENANT,
+        database=CHROMA_DATABASE,
+    )
 )
 
-collection = client.get_or_create_collection("legal_sections")
-embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+collection = client.get_collection("legal_sections")
+
+embedding_model = SentenceTransformer(
+    "sentence-transformers/all-MiniLM-L6-v2"
+)
+
 
 def retrieve_sections(query: str, state: str, top_k: int = 20):
     """
