@@ -1,5 +1,3 @@
-# services/embeddings.py
-
 import os
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
@@ -60,7 +58,7 @@ def retrieve_sections(query: str, state: str, top_k: int = 20):
     for r in results:
         p = r.payload
         docs.append({
-            "id": p.get("id"),
+            "id": p.get("doc_id"),              # ✅ FIXED
             "text": p.get("text"),
             "act": p.get("act"),
             "section": p.get("section"),
