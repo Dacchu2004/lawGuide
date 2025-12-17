@@ -11,7 +11,7 @@ python-dotenv==1.0.1
 requests==2.32.3
 
 # === VECTOR DB ===
-chromadb==1.3.5
+qdrant-client==1.9.0
 
 # === EMBEDDINGS ===
 sentence-transformers==2.7.0

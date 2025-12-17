@@ -1,83 +1,72 @@
+# services/embeddings.py
+
 import os
-import chromadb
-from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
+from qdrant_client import QdrantClient
+from qdrant_client.models import Filter, FieldCondition, MatchValue
 
-CHROMA_HOST = os.getenv("CHROMA_HOST")
-CHROMA_API_KEY = os.getenv("CHROMA_API_KEY")
-CHROMA_TENANT = os.getenv("CHROMA_TENANT")
-CHROMA_DATABASE = os.getenv("CHROMA_DATABASE")
+from config import EMBEDDING_MODEL_NAME
 
-if not all([CHROMA_HOST, CHROMA_API_KEY, CHROMA_TENANT, CHROMA_DATABASE]):
-    raise RuntimeError("❌ Chroma Cloud environment variables missing")
+# ---------------- ENV ----------------
+QDRANT_URL = os.environ["QDRANT_URL"]
+QDRANT_API_KEY = os.environ["QDRANT_API_KEY"]
 
-client = chromadb.Client(
-    Settings(
-        chroma_api_impl="rest",
-        chroma_server_host=CHROMA_HOST,
-        chroma_server_http_port=443,
-        chroma_server_ssl_enabled=True,
-        chroma_server_headers={
-            "Authorization": f"Bearer {CHROMA_API_KEY}"
-        },
-        tenant=CHROMA_TENANT,
-        database=CHROMA_DATABASE,
-    )
+COLLECTION_NAME = "legal_sections"
+
+# ---------------- CLIENT ----------------
+client = QdrantClient(
+    url=QDRANT_URL,
+    api_key=QDRANT_API_KEY,
+    timeout=60,
 )
 
-collection = client.get_collection("legal_sections")
+# ---------------- MODEL ----------------
+_embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
-embedding_model = SentenceTransformer(
-    "sentence-transformers/all-MiniLM-L6-v2"
-)
-
-
+# ---------------- RETRIEVAL ----------------
 def retrieve_sections(query: str, state: str, top_k: int = 20):
     """
-    Retrieve relevant legal sections from Chroma using semantic similarity.
-    - query: normalized English query
-    - state: user's state (e.g., Karnataka)
-    - top_k: number of results to return (default 5)
+    Semantic search over Indian legal sections using Qdrant.
     """
+
     if not query:
         return []
 
-    query_embedding = embedding_model.encode([query]).tolist()[0]
-    print("Chroma count:", collection.count())
+    query_vector = _embedding_model.encode(query).tolist()
 
-
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=top_k,  # 👈 now dynamic
-        where={
-            "$or": [
-                {"state": state},
-                {"state": "India"}
+    query_filter = None
+    if state and state.lower() != "india":
+        query_filter = Filter(
+            should=[
+                FieldCondition(
+                    key="state",
+                    match=MatchValue(value=state)
+                ),
+                FieldCondition(
+                    key="state",
+                    match=MatchValue(value="India")
+                ),
             ]
-        } if state and state.lower() != "india" else None # Optimize: if state is India, no filter needed usually, or just don't filter
-    )
-
-    # RETRY LOGIC: If no results found with filter, try WITHOUT filter (Broad Search)
-    if not results or not results["ids"] or not results["ids"][0]:
-        print(f"⚠ No strict results for state='{state}'. Retrying broad search...")
-        results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=top_k
         )
 
+    results = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        limit=top_k,
+        query_filter=query_filter,
+    )
+
     docs = []
-    for doc_id, text, metadata in zip(
-        results["ids"][0],
-        results["documents"][0],
-        results["metadatas"][0]
-    ):
+    for r in results:
+        p = r.payload
         docs.append({
-            "id": doc_id,
-            "text": text,
-            "act": metadata.get("act"),
-            "section": metadata.get("section"),
-            "jurisdiction": metadata.get("jurisdiction"),
-            "state": metadata.get("state"),
-            "sourceLink": metadata.get("source_link") or metadata.get("sourceLink"),
+            "id": p.get("id"),
+            "text": p.get("text"),
+            "act": p.get("act"),
+            "section": p.get("section"),
+            "jurisdiction": p.get("jurisdiction"),
+            "state": p.get("state"),
+            "sourceLink": p.get("source_link"),
         })
+
     return docs

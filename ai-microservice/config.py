@@ -17,13 +17,6 @@ if not GROQ_API_KEY:
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 RERANKER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
-# 📍 ChromaDB config
-CHROMA_HOST = os.getenv("CHROMA_HOST")
-CHROMA_API_KEY = os.getenv("CHROMA_API_KEY")
-CHROMA_TENANT = os.getenv("CHROMA_TENANT")
-CHROMA_DATABASE = os.getenv("CHROMA_DATABASE")
-
-
 # 🧪 Confidence threshold for safe output
 CONFIDENCE_THRESHOLD = 0.75
 
