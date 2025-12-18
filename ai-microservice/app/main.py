@@ -8,7 +8,6 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "https://law-guide-pi.vercel.app",
-        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
