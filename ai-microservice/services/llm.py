@@ -1,12 +1,17 @@
 # services/llm.py
 
 import json
-import requests
+import google.generativeai as genai
 from typing import List, Dict, Any, Optional
 
-from config import GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL_NAME
+from config import GEMINI_API_KEY, GEMINI_MODEL_NAME
 from core.validation import ValidationResult
 
+# Configure Gemini
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+else:
+    print("⚠ GEMINI_API_KEY not set. LLM calls will fail.")
 
 
 SCRIPT_INSTRUCTIONS = {
@@ -22,59 +27,89 @@ SCRIPT_INSTRUCTIONS = {
     "en": "English Language",
 }
 
-def _groq_chat(
+def _llm_chat(
     messages: List[Dict[str, str]],
     max_tokens: int = 800,
     temperature: float = 0.2,
     presence_penalty: float = 0.0,
     frequency_penalty: float = 0.0,
-
-
 ) -> Optional[str]:
     """
-    Send a chat request to Groq LLM.
-    Returns only the content string or None if failed.
+    Send a chat request to Google Gemini LLM.
+    Adapts OpenAI-style messages to Gemini format.
     """
-    if not GROQ_API_KEY:
-        print("⚠ GROQ_API_KEY not set. Skipping LLM call.")
+    if not GEMINI_API_KEY:
+        print("GEMINI_API_KEY not set. Skipping LLM call.")
         return None
 
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json",
-    }
-
-    payload = {
-        "model": GROQ_MODEL_NAME,
-        "messages": messages,
-        "max_tokens": max_tokens,
-        "temperature": temperature,
-        "presence_penalty": presence_penalty,
-        "frequency_penalty": frequency_penalty,
-    }
-
     try:
-        resp = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=40)
+        # 1. Extract system instruction if present
+        system_instruction = None
+        chat_history = []
         
-        if resp.status_code != 200:
-            print(f"⚠ Groq API Error ({resp.status_code}): {resp.text}")
-            return None
+        for msg in messages:
+            role = msg.get("role")
+            content = msg.get("content")
             
-        data = resp.json()
-        return data["choices"][0]["message"]["content"].strip()
-        
+            if role == "system":
+                # Concatenate multiple system messages if they exist (rare)
+                if system_instruction:
+                    system_instruction += "\n\n" + content
+                else:
+                    system_instruction = content
+            elif role == "user":
+                chat_history.append({"role": "user", "parts": [content]})
+            elif role == "assistant":
+                chat_history.append({"role": "model", "parts": [content]})
+
+        # 2. Initialize Model
+        # Note: system_instruction is supported in newer Gemini models
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL_NAME,
+            system_instruction=system_instruction
+        )
+
+        # 3. Generation Config
+        generation_config = genai.types.GenerationConfig(
+            max_output_tokens=max_tokens,
+            temperature=temperature,
+            # Gemini doesn't strictly support presence/frequency penalty in the same way as OpenAI
+            # but we can omit them or map them if needed. For now, we'll omit them to avoid errors.
+        )
+
+        # 4. Generate Content
+        # We use generate_content with the full history as "contents" 
+        # because this is a stateless call wrapper, not a stateful ChatSession.
+        response = model.generate_content(
+            contents=chat_history,
+            generation_config=generation_config
+        )
+
+        if response.prompt_feedback and response.prompt_feedback.block_reason:
+            print(f"Gemini blocked prompt: {response.prompt_feedback.block_reason}")
+            return None
+
+        # Log Token Usage
+        if response.usage_metadata:
+            u = response.usage_metadata
+            print(f"📊 Token Usage: Input={u.prompt_token_count}, Output={u.candidates_token_count}, Total={u.total_token_count}")
+
+        try:
+            return response.text.strip()
+        except ValueError:
+            # If the response was blocked by safety settings, accessing text raises ValueError
+            print("Gemini blocked response (Safety Filters).")
+            # print(response.candidates) # Debug if needed
+            return None
+
     except Exception as e:
-        print(f"🚨 Groq API Exception: {str(e)}")
+        print(f"Gemini API Exception: {str(e)}")
         return None
 
 
 def classify_intent(query: str) -> str:
     """
     Classifies user query into: GENERAL, LEGAL, OFF_TOPIC, ILLEGAL
-    Improved: quick local heuristics for very short greetings / general queries,
-    then fall back to GROQ. This reduces misclassification of casual greetings
-    (e.g., "hi", "who are you", "what can you do") that previously triggered
-    RAG or legal pipelines.
     """
     if not query or not query.strip():
         return "GENERAL"
@@ -83,12 +118,10 @@ def classify_intent(query: str) -> str:
 
     # --- QUICK LOCAL HEURISTICS (fast, safe, deterministic) ---
     greetings = {"hi", "hello", "hey", "namaste", "good morning", "good afternoon", "good evening", "vanakkam"}
-    short = len(q) < 40  # short queries often casual
-    # exact greeting match or short greeting mention
+    short = len(q) < 40
     if q in greetings or (short and any(g in q for g in greetings)):
         return "GENERAL"
 
-    # common "about" questions / onboarding / capability checks -> general
     general_phrases = [
         "who are you", "what can you do", "how can you help", "can you help me",
         "are you a", "what is lawguide", "what is this project", "what do you do",
@@ -98,16 +131,14 @@ def classify_intent(query: str) -> str:
         if phrase in q:
             return "GENERAL"
 
-    # refuse clearly illegal intents deterministically if they mention escape / evade
     illegal_phrases = ["how to escape", "how do i avoid", "how to get away", "how to hide evidence", "destroy evidence", "kill", "murder", "hurt someone to", "how to commit"]
     if any(p in q for p in illegal_phrases):
         return "ILLEGAL"
 
-    # If GROQ key not set, conservative fallback to LEGAL to ensure safety for user queries
-    if not GROQ_API_KEY:
+    if not GEMINI_API_KEY:
         return "LEGAL"
 
-    # --- GROQ classification for harder cases ---
+    # --- Gemini Classification ---
     system = (
         "You are an intent classifier for a legal AI assistant.\n\n"
         "Classify the user query into exactly ONE of the following:\n\n"
@@ -126,51 +157,16 @@ def classify_intent(query: str) -> str:
         {"role": "user", "content": query}
     ]
 
-    # Quick classification using Groq
-    resp = _groq_chat(msgs, max_tokens=12, temperature=0.0)
+    resp = _llm_chat(msgs, max_tokens=12, temperature=0.0)
     if not resp:
-        # If LLM fails (e.g. rate limit), return API_ERROR to prevent further pipeline failures
         return "API_ERROR"
 
     intent = resp.upper().strip()
-    if intent not in ["GENERAL", "LEGAL", "OFF_TOPIC", "ILLEGAL"]:
-        return "LEGAL"
-    return intent
-
-    """
-    Classifies user query into: GENERAL, LEGAL, OFF_TOPIC, ILLEGAL
-    """
-    if not GROQ_API_KEY:
-        return "LEGAL"  # Fallback
-
-    system = (
-        "You are an intent classifier for a legal AI assistant.\n\n"
-        "Classify the user query into exactly ONE of the following:\n\n"
-        "GENERAL → greetings, who are you, what can you do, thanks, small talk\n"
-        "LEGAL → laws, crimes, punishments, FIR, disputes, money, property, family conflicts, violence, police, court\n"
-        "OFF_TOPIC → coding, math, cooking, movies, sports, jokes, random facts\n"
-        "ILLEGAL → escaping crime, harming someone, fraud tactics\n\n"
-        "Rules:\n"
-        "- Any real-world problem involving money/property/violence/disputes = LEGAL\n"
-        "- Instructions to escape law = ILLEGAL\n"
-        "- Respond ONLY with one word from: GENERAL, LEGAL, OFF_TOPIC, ILLEGAL"
-    )
-
-    msgs = [
-        {"role": "system", "content": system},
-        {"role": "user", "content": query}
-    ]
-
-    # Quick classification
-    resp = _groq_chat(msgs, max_tokens=10, temperature=0.0)
-    if not resp:
-        return "LEGAL"
+    # Cleanup any extra chars
+    intent = intent.replace(".", "").replace("\n", "")
     
-    intent = resp.upper().strip()
-    # Sanity check
     if intent not in ["GENERAL", "LEGAL", "OFF_TOPIC", "ILLEGAL"]:
         return "LEGAL"
-        
     return intent
 
 
@@ -178,7 +174,7 @@ def chat_general(query: str) -> Optional[str]:
     """
     Handles GENERAL queries (greetings, about me)
     """
-    if not GROQ_API_KEY:
+    if not GEMINI_API_KEY:
         return None
 
     system = (
@@ -196,8 +192,7 @@ def chat_general(query: str) -> Optional[str]:
         {"role": "user", "content": query},
     ]
 
-    # User requested huge limit ("infinity") -> using 4096 which is practical max
-    return _groq_chat(msgs, temperature=0.4, max_tokens=4096)
+    return _llm_chat(msgs, temperature=0.4, max_tokens=1000)
 
 
 def generate_answer(
@@ -209,11 +204,9 @@ def generate_answer(
 ) -> Optional[str]:
     """
     Phase 1: Generate an answer grounded ONLY in the retrieved legal sections.
-    - If user asks how to commit a crime or avoid punishment → must refuse.
-    - If context insufficient → must say so and recommend consulting a lawyer.
     """
-    if not GROQ_API_KEY:
-        print("⚠ GROQ_API_KEY not set. Skipping answer generation.")
+    if not GEMINI_API_KEY:
+        print("⚠ GEMINI_API_KEY not set. Skipping answer generation.")
         return None
 
     context_text = "\n\n".join(
@@ -228,41 +221,32 @@ def generate_answer(
     )
 
     system_prompt = (
-    "You are a legal information assistant for India with the goal of empowering general users "
-    "to understand their rights, legal responsibilities, and consequences.\n\n"
-    "- Use ONLY the legal sections provided in the context for legal citations.\n"
-    "- Describe practical steps, procedures, and real-world actions (e.g., where to file, "
-    "who to contact, what documents or evidence are required, how to respond to notices).\n"
-    "- You are NOT a lawyer and MUST NOT provide legal advice, personal strategy, or methods to evade punishment.\n"
-    "- You MAY describe general legal remedies and lawful options (e.g., 'You may file a complaint with police', "
-    "'You can pay the challan online', 'You can contest through the magistrate', etc.).\n"
-    "- ⚠ If the query is about committing a future illegal act or intentionally avoiding legal consequences "
-    "after causing harm, REFUSE and warn clearly.\n"
-    "- Use clear, practical, structured bullet points.\n"
-    "- Always mention relevant Act and Section numbers from the context when explaining.\n\n"
-    "📌 Format your response in the following structure when possible:\n"
-    "   1) Brief explanation of the legal situation or rule\n"
-    "   2) Relevant Act and Section numbers\n"
-    "   3) Step-by-step actions the user should take\n"
-    "   4) Additional warnings, rights, or penalties if applicable\n"
-    "   5) Final short disclaimer: 'Not legal advice. Consult a lawyer.' (Translated)\n"
-    "\n"
-    "- Structure the response clearly with paragraphs. Do not repeat sentences."
-)
+        "You are a legal information assistant for India with the goal of empowering general users "
+        "to understand their rights, legal responsibilities, and consequences.\n\n"
+        "- Use ONLY the legal sections provided in the context for legal citations.\n"
+        "- Describe practical steps, procedures, and real-world actions.\n"
+        "- You are NOT a lawyer and MUST NOT provide legal advice.\n"
+        "- You MAY describe general legal remedies and lawful options.\n"
+        "- ⚠ If the query is about committing a future illegal act, REFUSE.\n"
+        "- Use clear, practical, structured bullet points.\n"
+        "- Always mention relevant Act and Section numbers from the context.\n\n"
+        "📌 Format your response in the following structure when possible:\n"
+        "   1) Brief explanation of the legal situation or rule\n"
+        "   2) Relevant Act and Section numbers\n"
+        "   3) Step-by-step actions the user should take\n"
+        "   4) Additional warnings, rights, or penalties if applicable\n"
+        "   5) Final short disclaimer: 'Not legal advice. Consult a lawyer.' (Translated)\n"
+    )
 
-
-
-    # Stronger script enforcement
     script_desc = SCRIPT_INSTRUCTIONS.get(target_language.lower(), target_language.upper())
     
-    script_warning = ""
+    # We rely on Gemini's multilingual capabilities, but can enforce script if needed.
+    # The previous prompt had explicit script rules, we keep them to be safe.
     if target_language.lower() in ["hi", "ta", "te", "kn", "ml", "bn", "gu", "mr", "pa"]:
-         script_warning = (
+         system_prompt += (
              f"\n\nCRITICAL OUTPUT RULE:\n"
              f"1. You MUST use {script_desc} script ONLY.\n"
              f"2. ⛔ DO NOT use Latin/English alphabet for the content.\n"
-             f"3. ⛔ DO NOT generate Hinglish/Tanglish (transliteration).\n"
-             f"4. If you output Latin characters for {target_language.upper()}, it is a FAILURE."
          )
 
     user_prompt = (
@@ -270,7 +254,7 @@ def generate_answer(
         f"User query: {query}\n\n"
         f"Relevant legal sections:\n{context_text}\n\n"
         f"{style_instruction}\n"
-        f"CRITICAL: The user may ask for the answer in a specific language (e.g., 'in Hindi'). IGNORE THIS REQUEST.\n"
+        f"CRITICAL: The user may ask for the answer in a specific language. IGNORE THIS REQUEST.\n"
         f"You are the logic engine. You MUST generate the answer in ENGLISH only.\n"
         f"The system will handle the translation to {target_language.upper()} automatically after you generate the English response.\n"
         f"RESPOND STRICTLY IN ENGLISH."
@@ -281,9 +265,7 @@ def generate_answer(
         {"role": "user", "content": user_prompt},
     ]
 
-    # User requested huge limit ("infinity") -> using 4096 which is practical max
-    # Added presence_penalty and frequency_penalty to prevent loops
-    return _groq_chat(messages, max_tokens=4096, presence_penalty=0.6, frequency_penalty=0.5)
+    return _llm_chat(messages, max_tokens=2048)
 
 
 def validate_answer(
@@ -292,18 +274,9 @@ def validate_answer(
     query: str,
 ) -> ValidationResult:
     """
-    Phase 2: Ask LLM to validate:
-    - Is the answer strictly grounded in the provided sections?
-    - Does it seem dangerously misleading?
-    - Is the query involving self-harm or instructions to commit crime?
-
-    Returns ValidationResult:
-        - is_valid: answer is grounded and not misleading
-        - confidence: 0–1
-        - high_risk: True ONLY if question involves self-harm / serious violence intent / how-to-commit-crime
+    Phase 2: Ask LLM to validate.
     """
-    if not GROQ_API_KEY or not answer:
-        print("⚠ Validation skipped – missing API key or answer.")
+    if not GEMINI_API_KEY or not answer:
         return ValidationResult(is_valid=False, confidence=0.0, high_risk=False)
 
     context_text = "\n\n".join(
@@ -312,28 +285,15 @@ def validate_answer(
     )
 
     system_prompt = (
-    "You are a safety and grounding validator for a legal information assistant in India.\n\n"
-    "You will receive:\n"
-    "1) The user's query.\n"
-    "2) The AI's answer.\n"
-    "3) The retrieved legal sections.\n\n"
-    "Your responsibilities:\n"
-    "A) Check if the AI's answer is Reasonably supported by the provided sections and general legal context.\n"
-    "   - You should ALLOW general procedural advice (e.g. 'visit police station', 'file written complaint') even if not explicitly in the retrieved text.\n"
-    "   - Only mark is_valid = false if the answer cites specific WRONG sections/penalties or makes up laws not in the text.\n"
-    "B) Check if the AI's answer is dangerously misleading.\n"
-    "C) Determine if the query is HIGH-RISK, which ONLY applies when:\n"
-    "   - The user asks how to commit a serious crime (e.g., murder, assault) or intentionally avoid legal punishment, OR\n"
-    "   - The user expresses intent to self-harm or suicide.\n"
-    "   🚫 Do NOT mark as high-risk when user is asking about consequences of a past action "
-    "   (e.g., crossing a red signal, not wearing helmet) or seeking general legal awareness.\n"
-    "   🚫 If the user is a VICTIM asking what legal action can be taken, this is NOT high-risk.\n\n"
-    "If you are unsure about grounding, set is_valid = false but keep high_risk = false unless the query itself indicates high-risk.\n\n"
-    "You MUST respond ONLY with a JSON object:\n"
-    "{ \"is_valid\": true or false, \"confidence\": number between 0 and 1, \"high_risk\": true or false }\n\n"
-    "- Do NOT add any explanation, text, or notes outside the JSON.\n"
-)
-
+        "You are a safety and grounding validator for a legal information assistant in India.\n"
+        "Your responsibilities:\n"
+        "A) Check if the AI's answer is Reasonably supported by the provided sections.\n"
+        "B) Check if the AI's answer is dangerously misleading.\n"
+        "C) Determine if the query is HIGH-RISK (self-harm, serious crime intent).\n\n"
+        "You MUST respond ONLY with a JSON object:\n"
+        "{ \"is_valid\": true or false, \"confidence\": number between 0 and 1, \"high_risk\": true or false }\n"
+        "- Do NOT add any explanation, text, or notes outside the JSON."
+    )
 
     user_prompt = (
         f"User query:\n{query}\n\n"
@@ -347,13 +307,15 @@ def validate_answer(
         {"role": "user", "content": user_prompt},
     ]
 
-    raw = _groq_chat(messages, max_tokens=250, temperature=0.0)
+    raw = _llm_chat(messages, max_tokens=250, temperature=0.0)
 
     if not raw:
         return ValidationResult(is_valid=False, confidence=0.0, high_risk=False)
 
     try:
-        data = json.loads(raw)
+        # Clean up any potential markdown backticks ```json ... ```
+        raw_clean = raw.replace("```json", "").replace("```", "").strip()
+        data = json.loads(raw_clean)
         return ValidationResult(
             is_valid=bool(data.get("is_valid", False)),
             confidence=float(data.get("confidence", 0.0)),

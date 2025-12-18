@@ -1,6 +1,6 @@
 # services/summarizer.py
 
-from services.llm import _groq_chat
+from services.llm import _llm_chat
 
 def summarize_text(text: str) -> str:
     """
@@ -29,7 +29,7 @@ def summarize_text(text: str) -> str:
         {"role": "user", "content": user_prompt},
     ]
 
-    result = _groq_chat(
+    result = _llm_chat(
         messages,
         max_tokens=500,
         temperature=0.2,

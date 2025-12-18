@@ -5,13 +5,21 @@ from dotenv import load_dotenv
 # Load environment variables from .env
 load_dotenv()
 
-# 🔐 API_KEYS
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL_NAME = "llama-3.1-8b-instant"
+# # 🔐 API_KEYS
+# GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+# GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+# GROQ_MODEL_NAME = "llama-3.1-8b-instant"
 
-if not GROQ_API_KEY:
-    raise ValueError("❌ GROQ_API_KEY missing in .env — cannot start microservice.")
+# if not GROQ_API_KEY:
+#     raise ValueError("❌ GROQ_API_KEY missing in .env — cannot start microservice.")
+
+# 🔐 Gemini
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("❌ GEMINI_API_KEY missing")
+
+# 🧠 Model selection
+GEMINI_MODEL_NAME = "gemini-flash-latest"
 
 # 🧠 Model Names
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
