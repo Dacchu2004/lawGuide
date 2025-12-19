@@ -13,13 +13,13 @@ GROQ_MODEL_NAME = "llama-3.1-8b-instant"
 if not GROQ_API_KEY:
     print("⚠ GROQ_API_KEY missing in .env — some features may fall back or fail.")
 
-# 🔐 Gemini
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("❌ GEMINI_API_KEY missing")
+# 🔐 OpenAI
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("❌ OPENAI_API_KEY missing")
 
 # 🧠 Model selection
-GEMINI_MODEL_NAME = "gemini-flash-latest"
+OPENAI_MODEL_NAME = "gpt-4o-mini"
 
 # 🧠 Model Names
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"

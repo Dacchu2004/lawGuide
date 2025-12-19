@@ -2,15 +2,15 @@
 
 import json
 import requests
-import google.generativeai as genai
+from openai import OpenAI
 from typing import List, Dict, Any, Optional
 
-from config import GEMINI_API_KEY, GEMINI_MODEL_NAME, GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL_NAME
+from config import OPENAI_API_KEY, OPENAI_MODEL_NAME, GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL_NAME
 from core.validation import ValidationResult
 
-# Configure Gemini
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+# Configure OpenAI
+if OPENAI_API_KEY:
+    openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 
 SCRIPT_INSTRUCTIONS = {
@@ -72,95 +72,36 @@ def groq_chat(
         return None
 
 
-def _gemini_chat(
+def _openai_chat(
     messages: List[Dict[str, str]],
     max_tokens: int = 1500,
     temperature: float = 0.2,
 ) -> Optional[str]:
     """
-    Send a chat request to Google Gemini LLM.
+    Send a chat request to OpenAI (gpt-4o-mini).
     Used for: RAG Answer Generation (Heavy lifting).
     """
-    if not GEMINI_API_KEY:
-        print("GEMINI_API_KEY not set. Skipping LLM call.")
+    if not OPENAI_API_KEY:
+        print("OPENAI_API_KEY not set. Skipping LLM call.")
         return None
 
     try:
-        # 1. Extract system instruction if present
-        system_instruction = None
-        chat_history = []
-        
-        for msg in messages:
-            role = msg.get("role")
-            content = msg.get("content")
-            
-            if role == "system":
-                if system_instruction:
-                    system_instruction += "\n\n" + content
-                else:
-                    system_instruction = content
-            elif role == "user":
-                chat_history.append({"role": "user", "parts": [content]})
-            elif role == "assistant":
-                chat_history.append({"role": "model", "parts": [content]})
-
-        # 2. Initialize Model
-        model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL_NAME,
-            system_instruction=system_instruction
-        )
-
-        # 3. Generation Config
-        generation_config = genai.types.GenerationConfig(
-            max_output_tokens=max_tokens,
+        response = openai_client.chat.completions.create(
+            model=OPENAI_MODEL_NAME,
+            messages=messages,
+            max_tokens=max_tokens,
             temperature=temperature,
         )
 
-        # 4. Generate Content with Retries
-        import time
-        import random
-        
-        retries = 3
-        base_delay = 2
-        
-        for attempt in range(retries + 1):
-            try:
-                response = model.generate_content(
-                    contents=chat_history,
-                    generation_config=generation_config
-                )
-                break # Success
-            except Exception as e:
-                error_str = str(e)
-                if "429" in error_str or "quota" in error_str.lower():
-                    if attempt < retries:
-                        sleep_time = base_delay * (2 ** attempt) + random.uniform(0, 1)
-                        print(f"⚠ Gemini Quota Exceeded. Retrying in {sleep_time:.2f}s... (Attempt {attempt+1}/{retries})")
-                        time.sleep(sleep_time)
-                        continue
-                    else:
-                        print("❌ Gemini Quota Exceeded. Max retries reached.")
-                        return None
-                else:
-                    raise e
-
-        if response.prompt_feedback and response.prompt_feedback.block_reason:
-            print(f"Gemini blocked prompt: {response.prompt_feedback.block_reason}")
-            return None
-
         # Log Token Usage
-        if response.usage_metadata:
-            u = response.usage_metadata
-            print(f"📊 Gemini Token Usage: Input={u.prompt_token_count}, Output={u.candidates_token_count}, Total={u.total_token_count}")
+        if response.usage:
+            u = response.usage
+            print(f"📊 OpenAI Token Usage: Input={u.prompt_tokens}, Output={u.completion_tokens}, Total={u.total_tokens}")
 
-        try:
-            return response.text.strip()
-        except ValueError:
-            print("Gemini blocked response (Safety Filters).")
-            return None
+        return response.choices[0].message.content.strip()
 
     except Exception as e:
-        print(f"Gemini API Exception: {str(e)}")
+        print(f"OpenAI API Exception: {str(e)}")
         return None
 
 
@@ -195,7 +136,7 @@ def classify_intent(query: str) -> str:
         return "ILLEGAL"
 
     if not GROQ_API_KEY:
-        # Fallback to Gemini if Groq missing, or LEGAL default
+        # Fallback to LEGAL default if keys missing
         return "LEGAL"
 
     # --- GROQ Classification ---
@@ -264,10 +205,10 @@ def generate_answer(
     target_language: str = "en",
 ) -> Optional[str]:
     """
-    Phase 1: Generate Answer using GEMINI (Large Context).
+    Phase 1: Generate Answer using OpenAI (Large Context).
     """
-    if not GEMINI_API_KEY:
-        print("⚠ GEMINI_API_KEY not set. Skipping answer generation.")
+    if not OPENAI_API_KEY:
+        print("⚠ OPENAI_API_KEY not set. Skipping answer generation.")
         return None
 
     context_text = "\n\n".join(
@@ -324,8 +265,8 @@ def generate_answer(
         {"role": "user", "content": user_prompt},
     ]
 
-    # Use Gemini for heavy context
-    return _gemini_chat(messages, max_tokens=2048)
+    # Use OpenAI for heavy context
+    return _openai_chat(messages, max_tokens=2048)
 
 
 def validate_answer(
