@@ -22,7 +22,7 @@ client = QdrantClient(
 _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
 # ---------------- RETRIEVAL ----------------
-def retrieve_sections(query: str, state: str, top_k: int = 10):
+def retrieve_sections(query: str, state: str, top_k: int = 30):
     """
     Semantic search over Indian legal sections using Qdrant.
     """
