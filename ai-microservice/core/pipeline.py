@@ -137,9 +137,12 @@ async def process_query(payload: QueryRequest) -> QueryResponse:
     reranked = rerank_sections(normalized_query, retrieved)
 
     # Generate primary answer (always in English for grounding/stability)
+    # LIMIT to 3 sections to prevent massive token usage (TPM limits)
+    top_sections = reranked[:3] 
+    
     draft_answer_en = generate_answer(
         query=normalized_query,
-        sections=reranked[:5],  # Limit to top 5 to prevent 413 Payload Too Large
+        sections=top_sections,
         explanation_mode=payload.explanation_mode,
         state=user_state,
         target_language="en", # Always generate in English first for stability

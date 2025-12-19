@@ -30,7 +30,7 @@ SCRIPT_INSTRUCTIONS = {
 
 def groq_chat(
     messages: List[Dict[str, str]],
-    max_tokens: int = 800,
+    max_tokens: int = 1200,
     temperature: float = 0.2,
     presence_penalty: float = 0.0,
     frequency_penalty: float = 0.0,
@@ -74,7 +74,7 @@ def groq_chat(
 
 def _openai_chat(
     messages: List[Dict[str, str]],
-    max_tokens: int = 1500,
+    max_tokens: int = 2500,
     temperature: float = 0.2,
 ) -> Optional[str]:
     """
@@ -205,8 +205,10 @@ def generate_answer(
     target_language: str = "en",
 ) -> Optional[str]:
     """
-    Phase 1: Generate Answer using OpenAI (Large Context).
+    Phase 1: Generate an answer grounded ONLY in the retrieved legal sections.
+    This version PRESERVES old Groq-era logic exactly.
     """
+
     if not OPENAI_API_KEY:
         print("⚠ OPENAI_API_KEY not set. Skipping answer generation.")
         return None
@@ -222,42 +224,42 @@ def generate_answer(
         else "Explain like I am 15 years old, using very simple language and practical examples."
     )
 
+    # ✅ CRITICAL: Explicitly allow PAST incidents
     system_prompt = (
-        "You are a legal information assistant for India with the goal of empowering general users "
-        "to understand their rights, legal responsibilities, and consequences.\n\n"
-        "- Use ONLY the legal sections provided in the context for legal citations.\n"
-        "- Describe practical steps, procedures, and real-world actions.\n"
-        "- You are NOT a lawyer and MUST NOT provide legal advice.\n"
-        "- You MAY describe general legal remedies and lawful options.\n"
-        "- ⚠ If the query is about committing a future illegal act, REFUSE.\n"
-        "- Use clear, practical, structured bullet points.\n"
-        "- Always mention relevant Act and Section numbers from the context.\n\n"
-        "📌 Format your response in the following structure when possible:\n"
-        "   1) Brief explanation of the legal situation or rule\n"
-        "   2) Relevant Act and Section numbers\n"
-        "   3) Step-by-step actions the user should take\n"
-        "   4) Additional warnings, rights, or penalties if applicable\n"
-        "   5) Final short disclaimer: 'Not legal advice. Consult a lawyer.' (Translated)\n"
-    )
+        "You are a legal information assistant for India.\n\n"
+        "IMPORTANT DISTINCTION:\n"
+        "- If the user asks about consequences of a PAST action (e.g., 'I jumped a signal', "
+        "'I was arrested', 'an accident already happened'), this is LEGAL INFORMATION and MUST be answered.\n"
+        "- If the user asks how to commit a crime in the future or how to avoid punishment, you MUST REFUSE.\n\n"
 
-    script_desc = SCRIPT_INSTRUCTIONS.get(target_language.lower(), target_language.upper())
-    
-    if target_language.lower() in ["hi", "ta", "te", "kn", "ml", "bn", "gu", "mr", "pa"]:
-         system_prompt += (
-             f"\n\nCRITICAL OUTPUT RULE:\n"
-             f"1. You MUST use {script_desc} script ONLY.\n"
-             f"2. ⛔ DO NOT use Latin/English alphabet for the content.\n"
-         )
+        "Rules:\n"
+        "- Use ONLY the legal sections provided in the context.\n"
+        "- You are NOT a lawyer.\n"
+        "- Do NOT provide advice on evading law enforcement.\n"
+        "- You MAY explain penalties, procedures, and lawful remedies.\n\n"
+
+        "Response requirements:\n"
+        "- Always cite Act and Section numbers from the context.\n"
+        "- Use clear structured paragraphs or bullets.\n"
+        "- Never hallucinate laws.\n\n"
+
+        "📌 Output format:\n"
+        "1) Brief explanation of the legal situation\n"
+        "2) Relevant Act and Section numbers\n"
+        "3) Consequences / penalties (if any)\n"
+        "4) Lawful next steps (if applicable)\n"
+        "5) Final disclaimer: 'Not legal advice. Consult a lawyer.'\n"
+    )
 
     user_prompt = (
         f"User state: {state}\n"
         f"User query: {query}\n\n"
         f"Relevant legal sections:\n{context_text}\n\n"
-        f"{style_instruction}\n"
-        f"CRITICAL: The user may ask for the answer in a specific language. IGNORE THIS REQUEST.\n"
-        f"You are the logic engine. You MUST generate the answer in ENGLISH only.\n"
-        f"The system will handle the translation to {target_language.upper()} automatically after you generate the English response.\n"
-        f"RESPOND STRICTLY IN ENGLISH."
+        f"{style_instruction}\n\n"
+        "CRITICAL:\n"
+        "- The event has ALREADY happened if described in past tense.\n"
+        "- DO NOT refuse for past incidents.\n"
+        "- Generate the answer STRICTLY in ENGLISH.\n"
     )
 
     messages = [
@@ -265,9 +267,7 @@ def generate_answer(
         {"role": "user", "content": user_prompt},
     ]
 
-    # Use OpenAI for heavy context
-    return _openai_chat(messages, max_tokens=2048)
-
+    return _openai_chat(messages, max_tokens=4096)
 
 def validate_answer(
     answer: str,
